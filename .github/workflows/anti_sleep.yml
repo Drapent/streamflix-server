@@ -1,0 +1,18 @@
+name: StreamFlix 24/7 Anti-Sleep Guardian
+
+on:
+  schedule:
+    # Executa a cada 10 minutos (24 horas por dia, 7 dias por semana)
+    - cron: '*/10 * * * *'
+  workflow_dispatch:
+
+jobs:
+  keep-alive:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping StreamFlix Render Server
+        run: |
+          echo "Disparando ping anti-hibernação para o Render..."
+          curl -s -f -m 30 "https://streamflix-server.onrender.com/health" || echo "Ping 1 enviado"
+          curl -s -f -m 30 "https://streamflix-server.onrender.com/api/version" || echo "Ping 2 enviado"
+          echo "Guardião Anti-Sleep concluído!"

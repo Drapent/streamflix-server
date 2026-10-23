@@ -2991,9 +2991,32 @@ class ThreadedIPTVServer(socketserver.ThreadingMixIn, http.server.HTTPServer):
     allow_reuse_address = True
 
 
+def start_anti_hibernation_daemon(interval_seconds=480):
+    """Guardião interno anti-hibernação do Render (Self-Ping a cada 8 minutos)."""
+    def worker():
+        time.sleep(25)  # Aguarda inicialização completa
+        target_url = os.environ.get("RENDER_EXTERNAL_URL", "https://streamflix-server.onrender.com")
+        health_url = f"{target_url.rstrip('/')}/health"
+        print(f"[Anti-Sleep] Guardião interno 24/7 ativado para {health_url} (a cada {interval_seconds // 60} min)")
+        while True:
+            time.sleep(interval_seconds)
+            try:
+                req = urllib.request.Request(
+                    health_url,
+                    headers={"User-Agent": "StreamFlix-AntiSleep-Internal/1.0", "Accept": "application/json"}
+                )
+                with urllib.request.urlopen(req, timeout=25) as resp:
+                    print(f"[Anti-Sleep] Ping autônomo recebido com sucesso! Status: {resp.status}")
+            except Exception as e:
+                print(f"[Anti-Sleep] Aviso de ping: {e}")
+
+    t = threading.Thread(target=worker, daemon=True, name="StreamFlixAntiSleepDaemon")
+    t.start()
+
 def start_server(port=8895):
     load_initial_channels()
     start_auto_update_daemon()
+    start_anti_hibernation_daemon()
     server = ThreadedIPTVServer(("0.0.0.0", port), IPTVServerHandler)
     print(f"[IPTV Server] Rodando na rede local em http://0.0.0.0:{port} (Acesse via PC ou Smart TV / Celular)")
     return server
