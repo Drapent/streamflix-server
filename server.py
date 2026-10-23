@@ -3064,7 +3064,7 @@ def start_auto_update_daemon(interval_seconds=1800):
 
 class ThreadedIPTVServer(socketserver.ThreadingMixIn, http.server.HTTPServer):
     daemon_threads = True
-    allow_reuse_address = True
+    allow_reuse_address = False
 
 
 def start_anti_hibernation_daemon(interval_seconds=480):

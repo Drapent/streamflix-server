@@ -970,7 +970,7 @@
         return;
       }
 
-      tbody.innerHTML = users.map(u => {
+      tbody.innerHTML = users.map((u, idx) => {
         const isMaster = u.email.toLowerCase().includes('angeloregis');
         const badge = isMaster 
           ? '<span class="badge badge-master">👑 MASTER / ADMIN</span>' 
@@ -985,12 +985,12 @@
 
         return `
           <tr>
-            <td class="mono">${u.id || '-'}</td>
+            <td class="mono">${u.id || (idx + 1)}</td>
             <td><strong>${u.email}</strong></td>
-            <td class="mono" style="color:var(--gold);">${u.account_code}</td>
+            <td class="mono" style="color:var(--gold);">${u.accountCode || u.account_code || '-'}</td>
             <td>${badge}</td>
-            <td>${created}</td>
-            <td>${lastLogin}</td>
+            <td>${u.createdFormatted || (u.createdAt ? new Date(u.createdAt * 1000).toLocaleString('pt-BR') : (u.created_at ? new Date(u.created_at * 1000).toLocaleString('pt-BR') : '-'))}</td>
+            <td>${u.profileCount !== undefined ? u.profileCount + ' perfil(is)' : '-'}</td>
             <td>${deleteBtn}</td>
           </tr>
         `;
