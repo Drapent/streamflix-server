@@ -2617,6 +2617,29 @@ class IPTVServerHandler(http.server.SimpleHTTPRequestHandler):
             else:
                 body = {}
 
+            # Database Administration APIs
+            if path == "/api/database/users":
+                email = (body.get("email") or "").strip()
+                password = (body.get("password") or "").strip()
+                if not email or not password:
+                    self.send_json({"success": False, "error": "Email e senha são obrigatórios."}, 400)
+                    return
+                res = sync_hub.register_account(email, password)
+                self.send_json(res)
+                return
+
+            if path == "/api/database/users/delete":
+                email = (body.get("email") or "").strip().lower()
+                if email in database.MASTER_EMAILS or "angeloregis" in email:
+                    self.send_json({"success": False, "error": "A conta master Angelo Regis está protegida e não pode ser excluída."}, 403)
+                    return
+                ok = database.delete_user(email)
+                if ok:
+                    self.send_json({"success": True, "message": f"Usuário {email} excluído com sucesso."})
+                else:
+                    self.send_json({"success": False, "error": f"Usuário {email} não encontrado no banco."}, 404)
+                return
+
             # API: Mobile Confirms Pairing & Logs in TV
             if path == "/api/auth/pair/confirm":
                 code = body.get("code", "").strip()
