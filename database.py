@@ -255,6 +255,7 @@ def get_profiles_by_account(account_code):
                 "id": r["id"],
                 "name": r["name"],
                 "avatar": r["avatar"],
+                "color": r["avatar"],
                 "isKids": bool(r["is_kids"]),
                 "createdAt": r["created_at"]
             })
@@ -289,6 +290,7 @@ def get_all_profiles():
                 "email": r["email"] or "Desconhecido",
                 "name": r["name"],
                 "avatar": r["avatar"],
+                "color": r["avatar"],
                 "isKids": bool(r["is_kids"]),
                 "createdAt": r["created_at"],
                 "createdFormatted": time.strftime("%d/%m/%Y %H:%M", time.localtime(r["created_at"])) if r["created_at"] else "-"
