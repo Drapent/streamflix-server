@@ -1,0 +1,70 @@
+{
+  "accountCode": "PADRAO",
+  "profiles": [
+    {
+      "id": "p1",
+      "name": "Principal",
+      "avatar": "blue",
+      "isKids": false,
+      "createdAt": 1792703228
+    }
+  ],
+  "progress": {
+    "p1": []
+  },
+  "accounts": {
+    "angelo.regis@gmail.com": {
+      "email": "angelo.regis@gmail.com",
+      "passwordHash": "bd24efdf0cfcc922a9bc5bbbaea9982479c240d0e8387a23b07779fc49cc70f2",
+      "playlistUrl": "http://5664.in/ts/919647767/c114f4545b",
+      "accountCode": "ACC_BD24EFDF",
+      "createdAt": 1790407508
+    },
+    "angeloregis@gmail.com": {
+      "email": "angelo.regis@gmail.com",
+      "passwordHash": "bd24efdf0cfcc922a9bc5bbbaea9982479c240d0e8387a23b07779fc49cc70f2",
+      "playlistUrl": "http://5664.in/ts/919647767/c114f4545b",
+      "accountCode": "ACC_BD24EFDF",
+      "createdAt": 1790407508
+    }
+  },
+  "accounts_data": {
+    "ACC_BD24EFDF": {
+      "profiles": [
+        {
+          "id": "p_1790407508065",
+          "name": "Carlos",
+          "avatar": "gold",
+          "isKids": false,
+          "createdAt": 1790407508
+        },
+        {
+          "id": "p_1790717094118",
+          "name": "Angelo",
+          "avatar": "blue",
+          "isKids": false,
+          "createdAt": 1790717093
+        }
+      ],
+      "progress": {
+        "p_1790407508065": [
+          {
+            "contentId": "1415",
+            "title": "O Dia Que Durou 21 Anos (2012)",
+            "seriesTitle": null,
+            "season": null,
+            "episode": null,
+            "streamUrl": "",
+            "poster": "https://image.tmdb.org/t/p/w185/rbJzNu0dlb1dsamzd2EtheNXXdM.jpg",
+            "type": "movie",
+            "positionMs": 1041000,
+            "durationMs": 4751000,
+            "progressPercent": 21.9,
+            "updatedAt": 1792707977,
+            "device": "Desktop"
+          }
+        ]
+      }
+    }
+  }
+}

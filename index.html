@@ -1,0 +1,1303 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>STREAMFLIX Cinema 4K - Login & Perfis pelo Celular</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-dark: #070a14;
+      --card-bg: rgba(15, 23, 42, 0.85);
+      --neon-cyan: #00D2FF;
+      --neon-blue: #0070F3;
+      --neon-purple: #7928CA;
+      --netflix-red: #E50914;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --radius: 18px;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      font-family: 'Outfit', sans-serif;
+      background-color: var(--bg-dark);
+      background-image: 
+        radial-gradient(circle at 10% 20%, rgba(229, 9, 20, 0.15) 0%, transparent 40%),
+        radial-gradient(circle at 90% 80%, rgba(0, 210, 255, 0.15) 0%, transparent 40%),
+        radial-gradient(circle at 50% 50%, rgba(121, 40, 202, 0.1) 0%, transparent 60%);
+      color: var(--text-main);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 20px 16px;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 440px;
+      background: var(--card-bg);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: var(--radius);
+      box-shadow: 0 25px 60px rgba(0, 0, 0, 0.8), 0 0 35px rgba(0, 210, 255, 0.1);
+      backdrop-filter: blur(20px);
+      padding: 28px 22px;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .container::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 4px;
+      background: linear-gradient(90deg, #E50914, #7928CA, #00D2FF);
+    }
+
+    .brand-header {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+
+    .brand-title {
+      font-size: 1.45rem;
+      font-weight: 900;
+      letter-spacing: -0.5px;
+      text-transform: uppercase;
+    }
+
+    .brand-accent {
+      color: var(--netflix-red);
+    }
+
+    .brand-badge {
+      background: linear-gradient(135deg, #FF0055, #7928CA);
+      font-size: 0.65rem;
+      font-weight: 800;
+      padding: 3px 7px;
+      border-radius: 6px;
+      letter-spacing: 0.5px;
+      vertical-align: middle;
+      margin-left: 4px;
+    }
+
+    .tv-detected-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(0, 210, 255, 0.1);
+      border: 1px solid rgba(0, 210, 255, 0.3);
+      padding: 6px 14px;
+      border-radius: 20px;
+      font-size: 0.82rem;
+      font-weight: 700;
+      color: var(--neon-cyan);
+      margin-bottom: 16px;
+    }
+
+    .tv-detected-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #00ff88;
+      box-shadow: 0 0 8px #00ff88;
+      animation: pulse 1.5s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.4; transform: scale(0.85); }
+    }
+
+    h1 {
+      font-size: 1.35rem;
+      font-weight: 800;
+      margin-bottom: 6px;
+      letter-spacing: -0.3px;
+    }
+
+    .subtitle {
+      font-size: 0.88rem;
+      color: var(--text-muted);
+      margin-bottom: 20px;
+      line-height: 1.45;
+    }
+
+    .code-input-wrap {
+      background: rgba(0, 0, 0, 0.4);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 14px;
+      padding: 12px;
+      margin-bottom: 20px;
+    }
+
+    .code-label {
+      font-size: 0.72rem;
+      font-weight: 700;
+      color: #94a3b8;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      display: block;
+      margin-bottom: 6px;
+    }
+
+    .code-input {
+      width: 100%;
+      background: transparent;
+      border: 2px dashed rgba(0, 210, 255, 0.4);
+      border-radius: 10px;
+      padding: 10px;
+      color: #fff;
+      font-size: 1.5rem;
+      font-weight: 900;
+      letter-spacing: 6px;
+      text-align: center;
+      outline: none;
+      box-shadow: inset 0 2px 6px rgba(0,0,0,0.5), 0 0 20px rgba(0, 210, 255, 0.15);
+      transition: all 0.2s;
+    }
+
+    .code-input:focus {
+      border-color: var(--neon-cyan);
+      box-shadow: inset 0 2px 6px rgba(0,0,0,0.5), 0 0 25px rgba(0, 210, 255, 0.4);
+    }
+
+    /* Tabs */
+    .auth-tabs-row {
+      display: flex;
+      gap: 6px;
+      background: rgba(0, 0, 0, 0.4);
+      padding: 5px;
+      border-radius: 14px;
+      margin-bottom: 18px;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .auth-tab-btn {
+      flex: 1;
+      padding: 10px 4px;
+      background: transparent;
+      border: none;
+      border-radius: 10px;
+      color: var(--text-muted);
+      font-size: 0.82rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .auth-tab-btn.active {
+      background: linear-gradient(135deg, #00D2FF 0%, #0070F3 100%);
+      color: #fff;
+      box-shadow: 0 4px 15px rgba(0, 210, 255, 0.35);
+    }
+
+    /* Form Fields */
+    .form-group {
+      margin-bottom: 13px;
+      text-align: left;
+    }
+
+    label {
+      display: block;
+      font-size: 0.74rem;
+      font-weight: 700;
+      color: #cbd5e1;
+      margin-bottom: 5px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    input[type="text"], input[type="email"], input[type="password"] {
+      width: 100%;
+      padding: 12px 14px;
+      background: rgba(8, 12, 22, 0.75);
+      border: 1px solid rgba(255, 255, 255, 0.16);
+      border-radius: 11px;
+      color: #fff;
+      font-size: 0.94rem;
+      outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+
+    input:focus {
+      border-color: var(--neon-cyan);
+      box-shadow: 0 0 16px rgba(0, 210, 255, 0.3);
+    }
+
+    .field-hint {
+      font-size: 0.72rem;
+      color: var(--text-muted);
+      margin-top: 4px;
+      line-height: 1.3;
+    }
+
+    /* Buttons */
+    .btn-submit-main {
+      width: 100%;
+      padding: 15px 18px;
+      background: linear-gradient(135deg, #E50914 0%, #B81D24 50%, #8A2BE2 100%);
+      border: none;
+      border-radius: 14px;
+      color: #fff;
+      font-size: 1rem;
+      font-weight: 800;
+      letter-spacing: 0.5px;
+      cursor: pointer;
+      box-shadow: 0 6px 25px rgba(229, 9, 20, 0.45);
+      margin-top: 8px;
+      transition: transform 0.15s, opacity 0.2s, box-shadow 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+    }
+
+    .btn-submit-main:active {
+      transform: scale(0.97);
+    }
+
+    .btn-submit-main:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    /* Alert */
+    .alert-box {
+      margin-top: 16px;
+      padding: 12px 16px;
+      border-radius: 12px;
+      font-size: 0.88rem;
+      font-weight: 600;
+      line-height: 1.4;
+      display: none;
+      text-align: left;
+    }
+
+    .alert-error {
+      background: rgba(229, 9, 20, 0.2);
+      border: 1px solid rgba(229, 9, 20, 0.5);
+      color: #ff858a;
+    }
+
+    .alert-success {
+      background: rgba(0, 255, 136, 0.18);
+      border: 1px solid rgba(0, 255, 136, 0.45);
+      color: #00ff88;
+    }
+
+    /* Success Card */
+    .success-card {
+      display: none;
+      text-align: center;
+      padding: 16px 4px;
+    }
+
+    .success-icon {
+      font-size: 3.5rem;
+      margin-bottom: 10px;
+      animation: bounce 0.6s ease;
+    }
+
+    @keyframes bounce {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-12px); }
+    }
+
+    /* Mobile Profiles UI */
+    .mob-profiles-grid {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-top: 10px;
+    }
+
+    .mob-profile-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 14px;
+      padding: 12px 14px;
+      transition: transform 0.15s, border-color 0.2s;
+    }
+
+    .mob-profile-left {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .mob-profile-avatar-circle {
+      width: 44px;
+      height: 44px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.5rem;
+      color: #000;
+      font-weight: bold;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    }
+
+    .mob-profile-info {
+      text-align: left;
+    }
+
+    .mob-profile-name {
+      font-size: 1rem;
+      font-weight: 800;
+      color: #fff;
+    }
+
+    .mob-profile-badge {
+      font-size: 0.68rem;
+      font-weight: 700;
+      color: #ff9f1c;
+      background: rgba(255, 159, 28, 0.15);
+      padding: 2px 6px;
+      border-radius: 6px;
+      display: inline-block;
+      margin-top: 2px;
+    }
+
+    .mob-profile-actions {
+      display: flex;
+      gap: 6px;
+    }
+
+    .btn-mob-edit, .btn-mob-delete {
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.16);
+      border-radius: 8px;
+      padding: 6px 10px;
+      font-size: 0.78rem;
+      font-weight: 700;
+      color: #cbd5e1;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .btn-mob-edit:active, .btn-mob-delete:active {
+      transform: scale(0.95);
+    }
+
+    .btn-mob-delete {
+      color: #ff6b72;
+      border-color: rgba(255, 107, 114, 0.3);
+    }
+
+    .btn-add-profile-mob {
+      background: linear-gradient(135deg, #00D2FF 0%, #0070F3 100%);
+      border: none;
+      border-radius: 12px;
+      color: #fff;
+      font-weight: 800;
+      font-size: 0.85rem;
+      padding: 10px 16px;
+      cursor: pointer;
+      box-shadow: 0 4px 14px rgba(0, 210, 255, 0.35);
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .mob-avatar-picker {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      margin-top: 8px;
+    }
+
+    .mob-avatar-opt {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+      padding: 12px 6px;
+      border-radius: 14px;
+      border: 2px solid transparent;
+      cursor: pointer;
+      background: rgba(255, 255, 255, 0.04);
+      transition: all 0.2s;
+    }
+
+    .mob-avatar-opt-circle {
+      width: 44px;
+      height: 44px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.5rem;
+      color: #000;
+    }
+
+    .mob-avatar-opt-name {
+      font-size: 0.72rem;
+      font-weight: 700;
+      color: #94a3b8;
+    }
+
+    .mob-avatar-opt.selected {
+      border-color: #00D2FF;
+      background: rgba(0, 210, 255, 0.15);
+      box-shadow: 0 0 15px rgba(0, 210, 255, 0.35);
+    }
+
+    .mob-avatar-opt.selected .mob-avatar-opt-name {
+      color: #fff;
+    }
+
+    /* Modal Overlay */
+    .mob-modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.85);
+      backdrop-filter: blur(8px);
+      z-index: 1000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+    }
+
+    .mob-modal-card {
+      background: #0f172a;
+      border: 1px solid rgba(0, 210, 255, 0.3);
+      border-radius: 20px;
+      width: 100%;
+      max-width: 420px;
+      padding: 22px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.9);
+      text-align: left;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="brand-header">
+      <svg viewBox="0 0 48 48" width="40" height="40" fill="none">
+        <defs>
+          <linearGradient id="logoG" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stop-color="#E50914" />
+            <stop offset="50%" stop-color="#7928CA" />
+            <stop offset="100%" stop-color="#00D2FF" />
+          </linearGradient>
+        </defs>
+        <rect x="3" y="3" width="42" height="42" rx="14" fill="#070a14" stroke="url(#logoG)" stroke-width="2.5"/>
+        <path d="M18 13.5C18 12.2 19.4 11.4 20.5 12.1L33.2 20.6C34.2 21.3 34.2 22.7 33.2 23.4L20.5 31.9C19.4 32.6 18 31.8 18 30.5V13.5Z" fill="url(#logoG)"/>
+      </svg>
+      <div class="brand-title">STREAM<span class="brand-accent">FLIX</span> <span class="brand-badge">CINEMA 4K</span></div>
+    </div>
+
+    <div id="mainFormView">
+      <div class="tv-detected-pill" id="tvStatusPill">
+        <div class="tv-detected-dot"></div>
+        <span id="tvStatusText">Smart TV Conectada</span>
+      </div>
+
+      <h1>Conectar & Gerenciar</h1>
+      <p class="subtitle">Faça login, recupere senhas ou crie novos perfis diretamente pelo celular para sua Smart TV.</p>
+
+      <div class="code-input-wrap">
+        <label for="inputPairCode" class="code-label">Código de Pareamento da TV</label>
+        <input type="text" id="inputPairCode" class="code-input" maxlength="6" placeholder="000000" required>
+      </div>
+
+      <!-- Navigation Tabs: Login vs Register vs Profiles -->
+      <div class="auth-tabs-row">
+        <button type="button" class="auth-tab-btn active" id="tabBtnLogin" onclick="switchAuthTab('login')">
+          Entrar
+        </button>
+        <button type="button" class="auth-tab-btn" id="tabBtnRegister" onclick="switchAuthTab('register')">
+          Criar Conta
+        </button>
+        <button type="button" class="auth-tab-btn" id="tabBtnProfiles" onclick="switchAuthTab('profiles')">
+          Perfis 👤
+        </button>
+      </div>
+
+      <!-- Form 1: Login Tab -->
+      <form id="formLoginTab" onsubmit="handleLoginSubmit(event)">
+        <div class="form-group">
+          <label for="loginEmail">E-mail</label>
+          <input type="email" id="loginEmail" placeholder="seu@email.com" autocomplete="username" required>
+        </div>
+        <div class="form-group">
+          <label for="loginPassword">Senha</label>
+          <input type="password" id="loginPassword" placeholder="••••••••" autocomplete="current-password" required>
+        </div>
+        <div style="display:flex; justify-content:flex-end; margin-top:-6px; margin-bottom:14px;">
+          <a href="#" onclick="openForgotTab(event)" style="color:#00D2FF; font-size:0.85rem; text-decoration:none; font-weight:600;">Esqueceu a senha?</a>
+        </div>
+        <button type="submit" class="btn-submit-main" id="btnLoginSubmit">
+          <span>ENTRAR NA SMART TV 🚀</span>
+        </button>
+      </form>
+
+      <!-- Form 2: Register Tab -->
+      <form id="formRegisterTab" style="display:none;" onsubmit="handleRegisterSubmit(event)">
+        <div class="form-group">
+          <label for="regEmail">E-mail da Conta</label>
+          <input type="email" id="regEmail" placeholder="seu@email.com" autocomplete="username" required>
+        </div>
+        <div class="form-group">
+          <label for="regPassword">Criar Senha</label>
+          <input type="password" id="regPassword" placeholder="Mínimo 6 caracteres" autocomplete="new-password" required minlength="6">
+        </div>
+        <div class="form-group">
+          <label for="regPasswordConfirm">Confirmar Senha</label>
+          <input type="password" id="regPasswordConfirm" placeholder="Repita a senha" autocomplete="new-password" required minlength="6">
+        </div>
+        <div class="form-group">
+          <label for="regPlaylist">Link da Lista M3U / Xtream Própria</label>
+          <input type="text" id="regPlaylist" placeholder="http://servidor.com:8080/get.php?username=..." required>
+          <p class="field-hint">Insira o link oficial da sua lista. Novos usuários precisam vincular sua lista própria para gerar o catálogo.</p>
+        </div>
+        <button type="submit" class="btn-submit-main" id="btnRegisterSubmit">
+          <span>CRIAR CONTA E CONECTAR TV ✨</span>
+        </button>
+      </form>
+
+      <!-- Form 3: Forgot Password Tab -->
+      <form id="formForgotTab" style="display:none;" onsubmit="handleForgotSubmit(event)">
+        <div class="form-group">
+          <label for="forgotEmail">E-mail Cadastrado</label>
+          <input type="email" id="forgotEmail" placeholder="seu@email.com" autocomplete="username" required>
+        </div>
+        <div id="forgotStep2" style="display:none;">
+          <div class="form-group">
+            <label for="forgotNewPass">Nova Senha</label>
+            <input type="password" id="forgotNewPass" placeholder="Mínimo 6 caracteres" minlength="6">
+          </div>
+          <div class="form-group">
+            <label for="forgotNewPassConfirm">Confirmar Nova Senha</label>
+            <input type="password" id="forgotNewPassConfirm" placeholder="Repita a nova senha" minlength="6">
+          </div>
+        </div>
+        <div id="forgotSuccessHint" style="display:none; background:rgba(0,210,255,0.15); border:1px solid #00D2FF; border-radius:12px; padding:14px; margin-bottom:16px; color:#fff; font-size:0.9rem; line-height:1.5;"></div>
+        <div style="display:flex; gap:10px;">
+          <button type="button" class="btn-submit-main" style="background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.2); color:#cbd5e1; flex:1;" onclick="switchAuthTab('login')">
+            <span>Voltar</span>
+          </button>
+          <button type="submit" class="btn-submit-main" id="btnForgotAction" style="flex:1;">
+            <span id="txtForgotAction">RECUPERAR SENHA 🔑</span>
+          </button>
+        </div>
+      </form>
+
+      <!-- Form 4: Profiles Management Tab on Mobile -->
+      <div id="formProfilesTab" style="display:none; text-align:left;">
+        <div style="background:rgba(0,210,255,0.08); border:1px solid rgba(0,210,255,0.25); border-radius:14px; padding:14px; margin-bottom:16px;">
+          <div style="font-size:0.75rem; text-transform:uppercase; color:#8fa0b5; font-weight:700;">Conta Ativa:</div>
+          <div id="mobActiveEmailDisplay" style="font-size:1rem; font-weight:800; color:#00D2FF; margin-top:2px;">angeloregis@gmail.com</div>
+          <div id="mobAccountCodeDisplay" style="font-size:0.75rem; color:#cbd5e1; margin-top:2px;">Código: ACC_BD24EFDF</div>
+        </div>
+
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+          <h3 style="margin:0; font-size:1.05rem; color:#fff;">Perfis da Conta</h3>
+          <button type="button" class="btn-add-profile-mob" onclick="openMobAddProfileModal()">
+            + Novo Perfil
+          </button>
+        </div>
+
+        <div id="mobProfilesList" class="mob-profiles-grid">
+          <!-- Populated by JS -->
+        </div>
+      </div>
+
+      <div class="alert-box alert-error" id="boxError"></div>
+    </div>
+
+    <!-- Tela de Sucesso -->
+    <div class="success-card" id="successView">
+      <div class="success-icon">🎉</div>
+      <h1 style="color:#00ff88; margin-bottom: 8px;">Smart TV Conectada!</h1>
+      <p class="subtitle" style="margin-bottom: 20px;">Sua conta e catálogo foram sincronizados com sucesso. A Smart TV já iniciou na sua sala!</p>
+      
+      <div class="tv-detected-pill" style="border-color:#00ff88; color:#00ff88; background: rgba(0,255,136,0.15);">
+        <span>✓ Sincronizado em tempo real</span>
+      </div>
+
+      <!-- Gerenciamento de Perfis no Sucesso -->
+      <div style="margin-top:24px; text-align:left; border-top:1px solid rgba(255,255,255,0.1); padding-top:20px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
+          <div>
+            <h3 style="margin:0; font-size:1.1rem; color:#fff;">Perfis da sua Conta</h3>
+            <span style="font-size:0.78rem; color:#94a3b8;">Crie e edite perfis direto pelo celular</span>
+          </div>
+          <button type="button" class="btn-add-profile-mob" onclick="openMobAddProfileModal()">
+            + Novo Perfil
+          </button>
+        </div>
+        <div id="mobSuccessProfilesList" class="mob-profiles-grid">
+          <!-- Populated by JS -->
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Mobile: Criar / Editar Perfil -->
+  <div id="modalProfileMobile" class="mob-modal-overlay" style="display:none;">
+    <div class="mob-modal-card">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+        <h2 id="mobModalTitle" style="margin:0; font-size:1.15rem; color:#fff;">Criar Novo Perfil</h2>
+        <button type="button" onclick="closeMobProfileModal()" style="background:none; border:none; color:#8fa0b5; font-size:1.8rem; cursor:pointer; line-height:1;">&times;</button>
+      </div>
+      <form onsubmit="handleMobSaveProfile(event)">
+        <input type="hidden" id="mobEditingProfId" value="">
+        <div class="form-group">
+          <label for="mobProfName">Nome do Perfil</label>
+          <input type="text" id="mobProfName" placeholder="Ex: Carlos, Angelo, Família..." maxlength="20" required>
+        </div>
+        <div class="form-group">
+          <label>Escolha o Avatar / Cor</label>
+          <div class="mob-avatar-picker" id="mobAvatarPicker">
+            <!-- Rendered by JS -->
+          </div>
+        </div>
+        <div style="display:flex; align-items:center; gap:10px; margin: 16px 0;">
+          <input type="checkbox" id="mobChkKids" style="width:20px; height:20px; accent-color:#00D2FF; cursor:pointer;">
+          <label for="mobChkKids" style="margin:0; font-size:0.85rem; text-transform:none; color:#e2e8f0; cursor:pointer;">
+            Perfil Infantil / Kids (Filmes e Séries livres)
+          </label>
+        </div>
+        <div style="display:flex; gap:10px; margin-top:20px;">
+          <button type="button" class="btn-submit-main" style="background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.2); color:#cbd5e1; flex:1;" onclick="closeMobProfileModal()">
+            Cancelar
+          </button>
+          <button type="submit" class="btn-submit-main" style="flex:2;" id="btnMobSaveProfile">
+            <span>SALVAR PERFIL ✨</span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    const urlParams = new URLSearchParams(window.location.search);
+    const codeParam = urlParams.get('code');
+
+    if (codeParam) {
+      document.getElementById('inputPairCode').value = codeParam.trim();
+      document.getElementById('tvStatusText').textContent = 'Código TV: ' + codeParam.trim();
+    }
+
+    // =========================================================================
+    // RENDER CLOUD BACKEND RESOLVER (Funciona em qualquer lugar do mundo!)
+    // =========================================================================
+    const RENDER_CLOUD_URL = "https://streamflix-server.onrender.com";
+
+    function getApiUrl(endpoint) {
+      if (!endpoint) return "";
+      if (endpoint.startsWith("http://") || endpoint.startsWith("https://")) return endpoint;
+      if (typeof window !== "undefined" && window.location && window.location.origin) {
+        const org = window.location.origin;
+        if (org.startsWith("http") && !org.includes("localhost") && !org.includes("127.0.0.1")) {
+          return endpoint;
+        }
+      }
+      const customUrl = localStorage.getItem("iptv_cloud_backend_url");
+      const base = (customUrl && customUrl.trim()) ? customUrl.trim().replace(/\/+$/, "") : RENDER_CLOUD_URL;
+      return base + (endpoint.startsWith("/") ? endpoint : "/" + endpoint);
+    }
+
+    let activeAccountEmail = localStorage.getItem('iptv_mob_email') || 'angeloregis@gmail.com';
+    let activeAccountCode = localStorage.getItem('iptv_mob_account_code') || 'ACC_BD24EFDF';
+    let mobProfiles = [];
+    let selectedMobAvatar = 'blue';
+
+    const AVAILABLE_AVATARS = [
+      { id: 'gold', name: 'Dourado VIP', color: '#ffd166', icon: '👑' },
+      { id: 'blue', name: 'Azul Neon', color: '#00d2ff', icon: '📺' },
+      { id: 'purple', name: 'Roxo Cyber', color: '#9d4edd', icon: '🎬' },
+      { id: 'red', name: 'Vermelho Live', color: '#ff3366', icon: '⚡' },
+      { id: 'green', name: 'Verde Matrix', color: '#00f5d4', icon: '⭐' },
+      { id: 'kids', name: 'Kids Infantil', color: '#ff9f1c', icon: '🧸', isKids: true }
+    ];
+
+    function switchAuthTab(tab) {
+      hideError();
+      const tabLogin = document.getElementById('tabBtnLogin');
+      const tabReg = document.getElementById('tabBtnRegister');
+      const tabProf = document.getElementById('tabBtnProfiles');
+      const formLogin = document.getElementById('formLoginTab');
+      const formReg = document.getElementById('formRegisterTab');
+      const formForgot = document.getElementById('formForgotTab');
+      const formProf = document.getElementById('formProfilesTab');
+
+      tabLogin.classList.remove('active');
+      tabReg.classList.remove('active');
+      if (tabProf) tabProf.classList.remove('active');
+      formLogin.style.display = 'none';
+      formReg.style.display = 'none';
+      if (formForgot) formForgot.style.display = 'none';
+      if (formProf) formProf.style.display = 'none';
+
+      if (tab === 'login') {
+        tabLogin.classList.add('active');
+        formLogin.style.display = 'block';
+      } else if (tab === 'register') {
+        tabReg.classList.add('active');
+        formReg.style.display = 'block';
+      } else if (tab === 'forgot') {
+        formForgot.style.display = 'block';
+      } else if (tab === 'profiles') {
+        if (tabProf) tabProf.classList.add('active');
+        if (formProf) formProf.style.display = 'block';
+        loadMobProfiles(activeAccountEmail, activeAccountCode);
+      }
+    }
+
+    function openForgotTab(e) {
+      if (e) e.preventDefault();
+      switchAuthTab('forgot');
+      const loginEmail = document.getElementById('loginEmail');
+      const forgotEmail = document.getElementById('forgotEmail');
+      if (loginEmail && forgotEmail && loginEmail.value) {
+        forgotEmail.value = loginEmail.value;
+      }
+      document.getElementById('forgotStep2').style.display = 'none';
+      document.getElementById('forgotSuccessHint').style.display = 'none';
+      document.getElementById('txtForgotAction').textContent = 'RECUPERAR SENHA 🔑';
+    }
+
+    async function handleForgotSubmit(e) {
+      e.preventDefault();
+      hideError();
+      const email = document.getElementById('forgotEmail').value.trim().toLowerCase();
+      if (!email) {
+        showError('Informe seu e-mail cadastrado.');
+        return;
+      }
+
+      if (email === 'angeloregis@gmail.com' || email === 'angelo.regis@gmail.com') {
+        const hintBox = document.getElementById('forgotSuccessHint');
+        hintBox.style.display = 'block';
+        hintBox.innerHTML = '🔑 <strong>Conta Master Identificada!</strong><br>A sua senha de acesso é: <strong>Carlos25Marina15</strong><br><br><button type="button" class="btn-submit-main" style="padding:10px; font-size:0.85rem;" onclick="preencherMasterELogar()">Preencher e Entrar Agora</button>';
+        return;
+      }
+
+      const step2 = document.getElementById('forgotStep2');
+      if (step2.style.display === 'none') {
+        const btn = document.getElementById('btnForgotAction');
+        btn.disabled = true;
+        try {
+          const res = await fetch(getApiUrl('/api/auth/forgot-password'), {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email: email })
+          });
+          const data = await res.json();
+          btn.disabled = false;
+          if (data && data.success) {
+            step2.style.display = 'block';
+            document.getElementById('txtForgotAction').textContent = 'SALVAR NOVA SENHA';
+            const hintBox = document.getElementById('forgotSuccessHint');
+            hintBox.style.display = 'block';
+            hintBox.innerHTML = 'Conta localizada! Digite sua nova senha abaixo.';
+          } else {
+            showError(data.error || 'E-mail não encontrado.');
+          }
+        } catch (err) {
+          btn.disabled = false;
+          showError('Erro ao comunicar com o servidor.');
+        }
+        return;
+      }
+
+      const newPass = document.getElementById('forgotNewPass').value;
+      const confirmPass = document.getElementById('forgotNewPassConfirm').value;
+      if (newPass.length < 6) {
+        showError('A senha precisa ter no mínimo 6 caracteres.');
+        return;
+      }
+      if (newPass !== confirmPass) {
+        showError('As senhas digitadas não coincidem.');
+        return;
+      }
+
+      const btn = document.getElementById('btnForgotAction');
+      btn.disabled = true;
+      try {
+        const res = await fetch(getApiUrl('/api/auth/reset-password'), {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: email, newPassword: newPass })
+        });
+        const data = await res.json();
+        btn.disabled = false;
+        if (data && data.success) {
+          alert('Senha redefinida com sucesso! Faça login com a nova senha.');
+          document.getElementById('loginEmail').value = email;
+          document.getElementById('loginPassword').value = newPass;
+          switchAuthTab('login');
+        } else {
+          showError(data.error || 'Erro ao redefinir senha.');
+        }
+      } catch (err) {
+        btn.disabled = false;
+        showError('Erro ao conectar ao servidor.');
+      }
+    }
+
+    function preencherMasterELogar() {
+      document.getElementById('loginEmail').value = 'angeloregis@gmail.com';
+      document.getElementById('loginPassword').value = 'Carlos25Marina15';
+      switchAuthTab('login');
+    }
+
+    function showError(msg) {
+      const box = document.getElementById('boxError');
+      box.textContent = msg;
+      box.style.display = 'block';
+    }
+
+    function hideError() {
+      const box = document.getElementById('boxError');
+      box.style.display = 'none';
+      box.textContent = '';
+    }
+
+    async function notifyCloudPairing(code, userObj) {
+      try {
+        await fetch(`https://ntfy.sh/iptv_pair_code_${code}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            status: 'authorized',
+            user: userObj
+          })
+        });
+      } catch (e) {
+        console.warn('Erro ao notificar nuvem:', e);
+      }
+    }
+
+    // =========================================================================
+    // GERENCIAMENTO DE PERFIS NO CELULAR (Criação, Edição, Seleção de Avatar)
+    // =========================================================================
+    function renderMobAvatarPicker(selectedId) {
+      const grid = document.getElementById('mobAvatarPicker');
+      if (!grid) return;
+      grid.innerHTML = '';
+      AVAILABLE_AVATARS.forEach(av => {
+        const opt = document.createElement('div');
+        opt.className = 'mob-avatar-opt' + (av.id === selectedId ? ' selected' : '');
+        opt.onclick = () => {
+          selectedMobAvatar = av.id;
+          renderMobAvatarPicker(av.id);
+        };
+        opt.innerHTML = `
+          <div class="mob-avatar-opt-circle" style="background:${av.color};">
+            ${av.icon}
+          </div>
+          <div class="mob-avatar-opt-name">${av.name}</div>
+        `;
+        grid.appendChild(opt);
+      });
+    }
+
+    async function loadMobProfiles(email, accountCode) {
+      const targetEmail = email || activeAccountEmail;
+      const targetCode = accountCode || activeAccountCode;
+
+      document.getElementById('mobActiveEmailDisplay').textContent = targetEmail;
+      document.getElementById('mobAccountCodeDisplay').textContent = 'Código: ' + targetCode;
+
+      try {
+        const res = await fetch(getApiUrl(`/api/sync/profiles?code=${encodeURIComponent(targetCode)}&email=${encodeURIComponent(targetEmail)}`);
+        if (res.ok) {
+          const data = await res.json();
+          if (data && data.profiles) {
+            mobProfiles = data.profiles;
+            renderMobProfilesLists();
+            return;
+          }
+        }
+      } catch (e) {}
+
+      // Fallback Nuvem 24/7
+      try {
+        const cloudRes = await fetch('https://ntfy.sh/iptv_cloud_sync_angeloregis_bd24/json?poll=1');
+        if (cloudRes.ok) {
+          const text = await cloudRes.text();
+          const lines = text.trim().split('\n');
+          let latest = null;
+          for (const line of lines) {
+            try {
+              const ev = JSON.parse(line);
+              if (ev.event === 'message' && ev.message) latest = JSON.parse(ev.message);
+            } catch (_) {}
+          }
+          if (latest && latest.profiles) {
+            mobProfiles = latest.profiles;
+            renderMobProfilesLists();
+            return;
+          }
+        }
+      } catch (e) {}
+
+      // Fallback padrão se for a conta master
+      if (targetEmail.includes('angeloregis')) {
+        mobProfiles = [
+          { id: 'p_1790407508065', name: 'Carlos', avatar: 'gold', isKids: false },
+          { id: 'p_1790717094118', name: 'Angelo', avatar: 'blue', isKids: false }
+        ];
+      } else {
+        mobProfiles = [{ id: 'p1', name: 'Principal', avatar: 'blue', isKids: false }];
+      }
+      renderMobProfilesLists();
+    }
+
+    function renderMobProfilesLists() {
+      const listTab = document.getElementById('mobProfilesList');
+      const listSuccess = document.getElementById('mobSuccessProfilesList');
+      if (listTab) renderSingleMobList(listTab);
+      if (listSuccess) renderSingleMobList(listSuccess);
+    }
+
+    function renderSingleMobList(container) {
+      container.innerHTML = '';
+      if (!mobProfiles || mobProfiles.length === 0) {
+        container.innerHTML = '<div style="color:#94a3b8; font-size:0.85rem; padding:10px 0;">Nenhum perfil cadastrado. Clique em "+ Novo Perfil" para criar.</div>';
+        return;
+      }
+
+      mobProfiles.forEach(prof => {
+        const av = AVAILABLE_AVATARS.find(a => a.id === prof.avatar) || AVAILABLE_AVATARS[0];
+        const item = document.createElement('div');
+        item.className = 'mob-profile-item';
+        item.innerHTML = `
+          <div class="mob-profile-left">
+            <div class="mob-profile-avatar-circle" style="background:${av.color};">
+              ${av.icon}
+            </div>
+            <div class="mob-profile-info">
+              <div class="mob-profile-name">${escapeHtml(prof.name)}</div>
+              ${prof.isKids ? '<span class="mob-profile-badge">Kids</span>' : ''}
+            </div>
+          </div>
+          <div class="mob-profile-actions">
+            <button type="button" class="btn-mob-edit" onclick="openMobEditProfileModal('${prof.id}')">✏️ Editar</button>
+            ${mobProfiles.length > 1 ? `<button type="button" class="btn-mob-delete" onclick="handleMobDeleteProfile('${prof.id}')">🗑️</button>` : ''}
+          </div>
+        `;
+        container.appendChild(item);
+      });
+    }
+
+    function openMobAddProfileModal() {
+      document.getElementById('mobEditingProfId').value = '';
+      document.getElementById('mobModalTitle').textContent = 'Criar Novo Perfil';
+      document.getElementById('mobProfName').value = '';
+      document.getElementById('mobChkKids').checked = false;
+      selectedMobAvatar = 'gold';
+      renderMobAvatarPicker('gold');
+      document.getElementById('modalProfileMobile').style.display = 'flex';
+      setTimeout(() => document.getElementById('mobProfName').focus(), 100);
+    }
+
+    function openMobEditProfileModal(profId) {
+      const prof = mobProfiles.find(p => p.id === profId);
+      if (!prof) return;
+      document.getElementById('mobEditingProfId').value = prof.id;
+      document.getElementById('mobModalTitle').textContent = 'Editar Perfil';
+      document.getElementById('mobProfName').value = prof.name;
+      document.getElementById('mobChkKids').checked = !!prof.isKids;
+      selectedMobAvatar = prof.avatar || 'blue';
+      renderMobAvatarPicker(selectedMobAvatar);
+      document.getElementById('modalProfileMobile').style.display = 'flex';
+      setTimeout(() => document.getElementById('mobProfName').focus(), 100);
+    }
+
+    function closeMobProfileModal() {
+      document.getElementById('modalProfileMobile').style.display = 'none';
+    }
+
+    async function handleMobSaveProfile(e) {
+      e.preventDefault();
+      const profId = document.getElementById('mobEditingProfId').value;
+      const name = document.getElementById('mobProfName').value.trim();
+      const isKids = document.getElementById('mobChkKids').checked;
+      const avatar = selectedMobAvatar || 'blue';
+
+      if (!name) {
+        alert('Digite o nome do perfil.');
+        return;
+      }
+
+      const btn = document.getElementById('btnMobSaveProfile');
+      btn.disabled = true;
+      btn.innerHTML = '<span>Salvando... ⏳</span>';
+
+      const payload = {
+        email: activeAccountEmail,
+        accountCode: activeAccountCode,
+        action: 'save',
+        id: profId || null,
+        name: name,
+        avatar: avatar,
+        isKids: isKids
+      };
+
+      try {
+        const res = await fetch(getApiUrl('/api/sync/profiles'), {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+        if (data && data.profiles) {
+          mobProfiles = data.profiles;
+        } else {
+          // Atualiza localmente
+          if (profId) {
+            const idx = mobProfiles.findIndex(p => p.id === profId);
+            if (idx >= 0) mobProfiles[idx] = { id: profId, name, avatar, isKids };
+          } else {
+            mobProfiles.push({ id: 'p_' + Date.now(), name, avatar, isKids });
+          }
+        }
+      } catch (err) {
+        // Modo offline / nuvem
+        if (profId) {
+          const idx = mobProfiles.findIndex(p => p.id === profId);
+          if (idx >= 0) mobProfiles[idx] = { id: profId, name, avatar, isKids };
+        } else {
+          mobProfiles.push({ id: 'p_' + Date.now(), name, avatar, isKids });
+        }
+      }
+
+      // Sincroniza Nuvem 24/7 imediatamente para refletir na Smart TV em tempo real!
+      try {
+        fetch('https://ntfy.sh/iptv_cloud_sync_angeloregis_bd24', {
+          method: 'POST',
+          headers: { 'Cache': 'yes', 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            accountCode: activeAccountCode,
+            profiles: mobProfiles,
+            progress: {},
+            accounts_data: {
+              [activeAccountCode]: {
+                profiles: mobProfiles,
+                progress: {}
+              }
+            }
+          })
+        });
+      } catch (_) {}
+
+      btn.disabled = false;
+      btn.innerHTML = '<span>SALVAR PERFIL ✨</span>';
+      closeMobProfileModal();
+      renderMobProfilesLists();
+      alert('✅ Perfil salvo e sincronizado com a Smart TV!');
+    }
+
+    async function handleMobDeleteProfile(profId) {
+      if (mobProfiles.length <= 1) {
+        alert('Não é possível excluir o único perfil da conta.');
+        return;
+      }
+      if (!confirm('Deseja excluir este perfil?')) return;
+
+      mobProfiles = mobProfiles.filter(p => p.id !== profId);
+      renderMobProfilesLists();
+
+      try {
+        await fetch(getApiUrl('/api/sync/profiles'), {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            email: activeAccountEmail,
+            accountCode: activeAccountCode,
+            action: 'delete',
+            id: profId
+          })
+        });
+      } catch (_) {}
+
+      try {
+        fetch('https://ntfy.sh/iptv_cloud_sync_angeloregis_bd24', {
+          method: 'POST',
+          headers: { 'Cache': 'yes', 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            accountCode: activeAccountCode,
+            profiles: mobProfiles,
+            progress: {},
+            accounts_data: {
+              [activeAccountCode]: {
+                profiles: mobProfiles,
+                progress: {}
+              }
+            }
+          })
+        });
+      } catch (_) {}
+    }
+
+    function escapeHtml(text) {
+      const map = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' };
+      return String(text).replace(/[&<>"']/g, m => map[m]);
+    }
+
+    // Envio do formulário de Login (Já tenho conta)
+    async function handleLoginSubmit(e) {
+      e.preventDefault();
+      hideError();
+
+      const code = document.getElementById('inputPairCode').value.trim();
+      const email = document.getElementById('loginEmail').value.trim().toLowerCase();
+      const password = document.getElementById('loginPassword').value;
+      const btn = document.getElementById('btnLoginSubmit');
+
+      if (!code || code.length < 6) {
+        showError('Digite o código de 6 dígitos que aparece na tela da TV.');
+        return;
+      }
+      if (!email || !password) {
+        showError('Por favor, informe seu e-mail e senha.');
+        return;
+      }
+
+      btn.disabled = true;
+      btn.innerHTML = '<span>Verificando credenciais... ⏳</span>';
+
+      try {
+        const res = await fetch(getApiUrl('/api/auth/pair/confirm'), {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            code: code,
+            email: email,
+            password: password
+          })
+        });
+
+        const data = await res.json();
+        if (data.success) {
+          activeAccountEmail = email;
+          activeAccountCode = data.accountCode || (data.user && data.user.accountCode) || 'ACC_BD24EFDF';
+          localStorage.setItem('iptv_mob_email', activeAccountEmail);
+          localStorage.setItem('iptv_mob_account_code', activeAccountCode);
+
+          notifyCloudPairing(code, data.user || { email: email, accountCode: activeAccountCode });
+          document.getElementById('mainFormView').style.display = 'none';
+          document.getElementById('successView').style.display = 'block';
+
+          loadMobProfiles(activeAccountEmail, activeAccountCode);
+        } else {
+          showError(data.error || 'E-mail ou senha incorretos.');
+          btn.disabled = false;
+          btn.innerHTML = '<span>ENTRAR NA SMART TV 🚀</span>';
+        }
+      } catch (err) {
+        showError('Falha ao conectar ao servidor local. Verifique se o celular está no mesmo Wi-Fi da TV.');
+        btn.disabled = false;
+        btn.innerHTML = '<span>ENTRAR NA SMART TV 🚀</span>';
+      }
+    }
+
+    // Envio do formulário de Cadastro (Criar Nova Conta)
+    async function handleRegisterSubmit(e) {
+      e.preventDefault();
+      hideError();
+
+      const code = document.getElementById('inputPairCode').value.trim();
+      const email = document.getElementById('regEmail').value.trim().toLowerCase();
+      const password = document.getElementById('regPassword').value;
+      const passwordConfirm = document.getElementById('regPasswordConfirm').value;
+      const playlistUrl = document.getElementById('regPlaylist').value.trim();
+      const btn = document.getElementById('btnRegisterSubmit');
+
+      if (!code || code.length < 6) {
+        showError('Digite o código de 6 dígitos que aparece na tela da TV.');
+        return;
+      }
+      if (!email || !password) {
+        showError('Preencha todos os campos do formulário.');
+        return;
+      }
+      if (password !== passwordConfirm) {
+        showError('As senhas digitadas não coincidem. Digite novamente.');
+        return;
+      }
+      if (password.length < 6) {
+        showError('A senha precisa ter no mínimo 6 caracteres.');
+        return;
+      }
+      if (!playlistUrl || !playlistUrl.startsWith('http')) {
+        showError('Insira o link oficial da sua lista M3U ou Xtream (começando com http:// ou https://).');
+        return;
+      }
+
+      btn.disabled = true;
+      btn.innerHTML = '<span>Criando conta e vinculando lista... ✨</span>';
+
+      try {
+        const res = await fetch(getApiUrl('/api/auth/register'), {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            email: email,
+            password: password,
+            playlistUrl: playlistUrl
+          })
+        });
+
+        const data = await res.json();
+        if (data.success) {
+          activeAccountEmail = email;
+          activeAccountCode = data.accountCode || 'ACC_BD24EFDF';
+          localStorage.setItem('iptv_mob_email', activeAccountEmail);
+          localStorage.setItem('iptv_mob_account_code', activeAccountCode);
+
+          await fetch(getApiUrl('/api/auth/pair/confirm'), {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              code: code,
+              email: email,
+              password: password
+            })
+          });
+          notifyCloudPairing(code, data);
+
+          document.getElementById('mainFormView').style.display = 'none';
+          document.getElementById('successView').style.display = 'block';
+
+          loadMobProfiles(activeAccountEmail, activeAccountCode);
+        } else {
+          showError(data.error || 'Falha ao criar conta. Tente outro e-mail.');
+          btn.disabled = false;
+          btn.innerHTML = '<span>CRIAR CONTA E CONECTAR TV ✨</span>';
+        }
+      } catch (err) {
+        showError('Falha de comunicação com o servidor. Verifique sua conexão Wi-Fi.');
+        btn.disabled = false;
+        btn.innerHTML = '<span>CRIAR CONTA E CONECTAR TV ✨</span>';
+      }
+    }
+  </script>
+</body>
+</html>

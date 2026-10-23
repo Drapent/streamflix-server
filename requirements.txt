@@ -1,0 +1,2 @@
+# StreamFlix Cinema Cloud Backend
+# Biblioteca padrão do Python (Zero dependências externas pesadas)
