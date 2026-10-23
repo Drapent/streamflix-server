@@ -2624,7 +2624,10 @@ class IPTVServerHandler(http.server.SimpleHTTPRequestHandler):
                 if not email or not password:
                     self.send_json({"success": False, "error": "Email e senha são obrigatórios."}, 400)
                     return
-                res = sync_hub.register_account(email, password)
+                playlist_url = (body.get("playlistUrl") or body.get("playlist_url") or "").strip()
+                if not playlist_url and "angeloregis" not in email.lower():
+                    playlist_url = "https://example.com/demo.m3u"
+                res = sync_hub.register_account(email, password, playlist_url)
                 self.send_json(res)
                 return
 

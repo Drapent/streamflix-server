@@ -26,6 +26,13 @@
       "playlistUrl": "http://5664.in/ts/919647767/c114f4545b",
       "accountCode": "ACC_BD24EFDF",
       "createdAt": 1790407508
+    },
+    "teste_db@exemplo.com": {
+      "email": "teste_db@exemplo.com",
+      "passwordHash": "6c92798b422f57bd6a4cbbc815556c040a2e0a67b13aa8e033ccc2f060315039",
+      "playlistUrl": "https://example.com/demo.m3u",
+      "accountCode": "ACC_6C92798B",
+      "createdAt": 1792734164
     }
   },
   "accounts_data": {
@@ -65,6 +72,24 @@
           }
         ]
       }
+    },
+    "ACC_6C92798B": {
+      "profiles": [
+        {
+          "id": "p1",
+          "name": "Principal",
+          "avatar": "blue",
+          "isKids": false,
+          "createdAt": 1792734164
+        }
+      ],
+      "progress": {
+        "p1": []
+      },
+      "favorites": [],
+      "favoritesUpdatedAt": 0,
+      "catalogVersion": 0,
+      "catalogUpdatedAt": ""
     }
   }
 }
