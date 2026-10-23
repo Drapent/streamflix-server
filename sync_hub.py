@@ -485,7 +485,8 @@ def login_account(email, password):
         "success": True,
         "email": clean_email,
         "playlistUrl": p_url,
-        "accountCode": acc_code
+        "accountCode": acc_code,
+        "profiles": db_profiles
     }
 
 
