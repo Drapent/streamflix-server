@@ -1,3 +1,4 @@
+import database
 """
 Sync Hub for IPTV (PC, Mobile and TV)
 Manages Netflix-style User Profiles and Cross-Device Playback Synchronization ('Continuar Assistindo').
@@ -344,54 +345,61 @@ def register_account(email, password, playlist_url=""):
     pass_hash = hash_password(password)
     clean_url = (playlist_url or "").strip()
 
+    # Validação no Banco de Dados SQLite e sync_data.json
+    db_user = database.get_user_by_email(clean_email)
     data = load_sync_data()
     accounts = data.setdefault("accounts", {})
-    
-    # Impede sobrescrever conta existente de outro usuario
-    if clean_email in accounts:
-        return {"success": False, "error": "Este e-mail já possui uma conta cadastrada. Faça login."}
-    if clean_email not in ("angeloregis@gmail.com", "angelo.regis@gmail.com") and not clean_url:
-        return {"success": False, "error": "Informe o link da sua lista M3U ou Xtream para cadastrar sua conta."}
-        account_code = f"ACC_{pass_hash[:8].upper()}"
-        accounts[clean_email] = {
-            "email": clean_email,
-            "passwordHash": pass_hash,
-            "playlistUrl": clean_url,
-            "accountCode": account_code,
-            "createdAt": int(time.time())
-        }
-        # Configuração inicial de perfil
-        bucket = data.setdefault("accounts_data", {}).setdefault(account_code, new_account_bucket())
-        if not bucket.get("profiles"):
-            bucket["profiles"] = new_account_bucket()["profiles"]
-        if clean_email in ("angeloregis@gmail.com", "angelo.regis@gmail.com"):
-            bucket["profiles"] = [
-                {
-                    "id": "p_1790407508065",
-                    "name": "Carlos",
-                    "avatar": "gold",
-                    "isKids": False,
-                    "createdAt": 1790407508
-                },
-                {
-                    "id": "p_1790717094118",
-                    "name": "Angelo",
-                    "avatar": "blue",
-                    "isKids": False,
-                    "createdAt": 1790717093
-                }
-            ]
 
+    if db_user or clean_email in accounts:
+        return {"success": False, "error": "Este e-mail já possui uma conta cadastrada. Faça login."}
+
+    # POLÍTICA DE DADOS & PRIVACIDADE ESTRITA:
+    # A lista oficial do Master pertence unicamente a Angelo Regis.
+    # Novos usuários DEVEM obrigatoriamente fornecer sua própria lista M3U.
+    MASTER_EMAILS = ("angeloregis@gmail.com", "angelo.regis@gmail.com")
+    MASTER_PLAYLIST = "http://5664.in/ts/919647767/c114f4545b"
+
+    if clean_email in MASTER_EMAILS:
+        account_code = "ACC_BD24EFDF"
+        clean_url = MASTER_PLAYLIST
+    else:
+        if not clean_url or not clean_url.startswith("http"):
+            return {"success": False, "error": "Para criar sua conta, é obrigatório informar o link da sua própria lista M3U ou Xtream."}
+        if "5664.in" in clean_url or "919647767/c114f4545b" in clean_url:
+            return {"success": False, "error": "Esta lista IPTV é restrita e privada. Você deve cadastrar o link da sua própria lista."}
+        account_code = f"ACC_{pass_hash[:8].upper()}"
+
+    # Salva no Banco de Dados SQLite Permanente
+    database.save_user(clean_email, pass_hash, account_code, clean_url)
+
+    # Configuração inicial de perfil
+    if clean_email in MASTER_EMAILS:
+        database.save_profile(account_code, "p_1790407508065", "Carlos", "gold", False)
+        database.save_profile(account_code, "p_1790717094118", "Angelo", "blue", False)
+    else:
+        database.save_profile(account_code, "p1", "Principal", "blue", False)
+
+    # Salva também em sync_data.json para compatibilidade local
+    user_obj = {
+        "email": clean_email,
+        "passwordHash": pass_hash,
+        "playlistUrl": clean_url,
+        "accountCode": account_code,
+        "createdAt": int(time.time())
+    }
+    accounts[clean_email] = user_obj
+    bucket = data.setdefault("accounts_data", {}).setdefault(account_code, new_account_bucket())
+    bucket["profiles"] = database.get_profiles_by_account(account_code)
     save_sync_data(data)
-    
+
     # Salva na Nuvem 24/7 (CLOUD_ACCOUNTS_URL) para que Celular, PC e TV acessem com a mesma senha
-    threading.Thread(target=save_cloud_account, args=(accounts[clean_email],), daemon=True).start()
+    threading.Thread(target=save_cloud_account, args=(user_obj,), daemon=True).start()
     trigger_cloud_sync(account_code, data, immediate=True)
 
     return {
         "success": True,
         "email": clean_email,
-        "playlistUrl": accounts[clean_email].get("playlistUrl", clean_url),
+        "playlistUrl": clean_url,
         "accountCode": account_code
     }
 
@@ -399,42 +407,85 @@ def login_account(email, password):
     clean_email = email.strip().lower()
     pass_hash = hash_password(password)
 
+    # 1. Busca primeiro no Banco de Dados SQLite Permanente
+    user = database.get_user_by_email(clean_email)
+
     data = load_sync_data()
     accounts = data.get("accounts", {})
-    user = accounts.get(clean_email)
+
+    if not user:
+        # Fallback para sync_data.json
+        if clean_email in accounts:
+            user = accounts[clean_email]
+            database.save_user(clean_email, user.get("passwordHash", pass_hash), user.get("accountCode", "PADRAO"), user.get("playlistUrl", ""))
 
     if not user:
         # Busca conta na Nuvem 24/7 (cadastrada pelo celular ou outro aparelho)
         try:
             cloud_accounts = fetch_cloud_accounts()
             if clean_email in cloud_accounts:
-                user = cloud_accounts[clean_email]
-                accounts[clean_email] = user
+                c_user = cloud_accounts[clean_email]
+                user = {
+                    "email": clean_email,
+                    "password_hash": c_user.get("passwordHash", ""),
+                    "passwordHash": c_user.get("passwordHash", ""),
+                    "account_code": c_user.get("accountCode", f"ACC_{pass_hash[:8].upper()}"),
+                    "accountCode": c_user.get("accountCode", f"ACC_{pass_hash[:8].upper()}"),
+                    "playlist_url": c_user.get("playlistUrl", ""),
+                    "playlistUrl": c_user.get("playlistUrl", "")
+                }
+                accounts[clean_email] = c_user
+                database.save_user(clean_email, user["password_hash"], user["account_code"], user["playlist_url"])
                 save_sync_data(data)
         except Exception as e:
             print(f"[SyncHub Login Cloud Check] {e}")
 
+    # Se ainda assim não encontrar, retorna erro explícito orientando a criar conta
     if not user:
-        return {"success": False, "error": "Conta não encontrada. Crie sua conta primeiro!"}
+        return {
+            "success": False,
+            "error": "Usuário não cadastrado. Por favor, crie sua conta e adicione sua própria lista M3U."
+        }
 
+    user_hash = user.get("password_hash") or user.get("passwordHash") or ""
     MASTER_HASHES = (
         "bd24efdf0cfcc922a9bc5bbbaea9982479c240d0e8387a23b07779fc49cc70f2", # Carlos25Marina15
         "233f2170623276d41b26b4f8211ed6907cc38be008dfb50e1e25c6c767d1495c"  # carlos25marina15
     )
     if clean_email in ("angeloregis@gmail.com", "angelo.regis@gmail.com"):
         if pass_hash not in MASTER_HASHES:
-            return {"success": False, "error": "Senha incorreta."}
-    elif user.get("passwordHash") != pass_hash:
-        return {"success": False, "error": "Senha incorreta."}
+            return {"success": False, "error": "Senha incorreta. Verifique suas credenciais."}
+    elif user_hash != pass_hash:
+        return {"success": False, "error": "Senha incorreta. Verifique suas credenciais."}
 
-    # Assegura presença na nuvem 24/7
-    threading.Thread(target=save_cloud_account, args=(user,), daemon=True).start()
+    acc_code = user.get("account_code") or user.get("accountCode") or f"ACC_{pass_hash[:8].upper()}"
+    p_url = user.get("playlist_url") if "playlist_url" in user else user.get("playlistUrl", "")
+
+    # Proteção de privacidade: lista Master nunca vaza para terceiros
+    if clean_email not in ("angeloregis@gmail.com", "angelo.regis@gmail.com"):
+        if p_url == "http://5664.in/ts/919647767/c114f4545b":
+            p_url = ""
+            database.update_user_playlist(clean_email, "")
+
+    # Garante perfis no SQLite
+    db_profiles = database.get_profiles_by_account(acc_code)
+    storage = _get_account_storage(data, acc_code)
+    storage["profiles"] = db_profiles
+    save_sync_data(data)
+
+    user_save_obj = {
+        "email": clean_email,
+        "passwordHash": pass_hash,
+        "playlistUrl": p_url,
+        "accountCode": acc_code
+    }
+    threading.Thread(target=save_cloud_account, args=(user_save_obj,), daemon=True).start()
 
     return {
         "success": True,
         "email": clean_email,
-        "playlistUrl": user.get("playlistUrl", ""),
-        "accountCode": user.get("accountCode", f"ACC_{pass_hash[:8].upper()}")
+        "playlistUrl": p_url,
+        "accountCode": acc_code
     }
 
 
@@ -682,53 +733,49 @@ def get_active_account_code():
     return "PADRAO"
 
 def get_profiles(account_code="PADRAO"):
+    # Consulta o SQLite
+    db_profs = database.get_profiles_by_account(account_code)
+    
     data = load_sync_data()
     storage = _get_account_storage(data, account_code)
+    storage["profiles"] = db_profs
+    save_sync_data(data)
+
     return {
         "accountCode": account_code,
-        "profiles": storage.get("profiles", []),
+        "profiles": db_profs,
         "availableAvatars": DEFAULT_AVATARS
     }
 
 def add_or_update_profile(account_code, profile_id, name, avatar="blue", is_kids=False):
+    new_id = profile_id or f"p_{int(time.time())}"
+    database.save_profile(account_code, new_id, name.strip() or "Novo Perfil", avatar, is_kids)
+
     data = load_sync_data()
     storage = _get_account_storage(data, account_code)
-    profiles = storage.setdefault("profiles", [])
-    
-    existing = next((p for p in profiles if p["id"] == profile_id), None)
-    if existing:
-        existing["name"] = name.strip()
-        existing["avatar"] = avatar
-        existing["isKids"] = is_kids
-    else:
-        new_id = profile_id or f"p_{int(time.time())}"
-        profiles.append({
-            "id": new_id,
-            "name": name.strip() or "Novo Perfil",
-            "avatar": avatar,
-            "isKids": is_kids,
-            "createdAt": int(time.time())
-        })
-        storage.setdefault("progress", {})[new_id] = []
-    
+    storage["profiles"] = database.get_profiles_by_account(account_code)
+    storage.setdefault("progress", {}).setdefault(new_id, [])
     save_sync_data(data)
     trigger_cloud_sync(account_code, data, immediate=True)
     return get_profiles(account_code)
 
 def delete_profile(account_code, profile_id):
+    db_profs = database.get_profiles_by_account(account_code)
+    if len(db_profs) <= 1:
+        return {"error": "Não é possível excluir o único perfil existente."}
+
+    database.delete_profile(account_code, profile_id)
+
     data = load_sync_data()
     storage = _get_account_storage(data, account_code)
-    profiles = storage.get("profiles", [])
-    if len(profiles) <= 1:
-        return {"error": "Não é possível excluir o único perfil existente."}
-    
-    storage["profiles"] = [p for p in profiles if p["id"] != profile_id]
+    storage["profiles"] = database.get_profiles_by_account(account_code)
     if profile_id in storage.get("progress", {}):
         del storage["progress"][profile_id]
-    
+
     save_sync_data(data)
     trigger_cloud_sync(account_code, data, immediate=True)
     return get_profiles(account_code)
+
 
 def get_progress(account_code, profile_id):
     data = load_sync_data()
