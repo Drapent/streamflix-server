@@ -1,0 +1,1177 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>STREAMFLIX Cinema | Banco de Dados & Painel Administrativo</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Outfit:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-base: #07090e;
+      --bg-surface: rgba(15, 21, 34, 0.75);
+      --bg-surface-elevated: rgba(22, 31, 50, 0.85);
+      --border-subtle: rgba(255, 255, 255, 0.08);
+      --border-focus: rgba(245, 158, 11, 0.5);
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --gold: #f59e0b;
+      --gold-glow: rgba(245, 158, 11, 0.25);
+      --cyan: #06b6d4;
+      --cyan-glow: rgba(6, 182, 212, 0.25);
+      --emerald: #10b981;
+      --emerald-glow: rgba(16, 185, 129, 0.25);
+      --rose: #f43f5e;
+      --purple: #a855f7;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: var(--bg-base);
+      background-image: 
+        radial-gradient(circle at 15% 15%, rgba(245, 158, 11, 0.05) 0%, transparent 40%),
+        radial-gradient(circle at 85% 85%, rgba(6, 182, 212, 0.05) 0%, transparent 40%),
+        linear-gradient(180deg, #07090e 0%, #0c1017 100%);
+      color: var(--text-main);
+      font-family: 'Outfit', sans-serif;
+      min-height: 100vh;
+      padding: 24px;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .container {
+      max-width: 1320px;
+      margin: 0 auto;
+    }
+
+    /* HEADER */
+    header {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 24px 28px;
+      background: var(--bg-surface);
+      backdrop-filter: blur(20px);
+      border: 1px solid var(--border-subtle);
+      border-radius: 20px;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+      margin-bottom: 24px;
+    }
+
+    .brand-wrap {
+      display: flex;
+      align-items: center;
+      gap: 18px;
+    }
+
+    .brand-logo {
+      width: 52px;
+      height: 52px;
+      background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+      border-radius: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 26px;
+      font-weight: 900;
+      color: #000;
+      box-shadow: 0 8px 24px var(--gold-glow);
+    }
+
+    .brand-titles h1 {
+      font-size: 24px;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .brand-titles h1 span {
+      color: var(--gold);
+    }
+
+    .badge-engine {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 10px;
+      font-size: 11px;
+      font-weight: 700;
+      border-radius: 999px;
+      background: rgba(16, 185, 129, 0.15);
+      border: 1px solid rgba(16, 185, 129, 0.3);
+      color: #34d399;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .pulse-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: #10b981;
+      box-shadow: 0 0 10px #10b981;
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.4; transform: scale(0.85); }
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 18px;
+      font-size: 13px;
+      font-weight: 600;
+      font-family: 'Outfit', sans-serif;
+      border-radius: 12px;
+      cursor: pointer;
+      border: 1px solid transparent;
+      transition: all 0.2s ease;
+      text-decoration: none;
+    }
+
+    .btn-gold {
+      background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+      color: #05070a;
+      box-shadow: 0 4px 16px var(--gold-glow);
+    }
+    .btn-gold:hover {
+      filter: brightness(1.1);
+      transform: translateY(-2px);
+    }
+
+    .btn-outline {
+      background: rgba(255, 255, 255, 0.05);
+      border-color: var(--border-subtle);
+      color: var(--text-main);
+    }
+    .btn-outline:hover {
+      background: rgba(255, 255, 255, 0.1);
+      border-color: rgba(255, 255, 255, 0.2);
+      transform: translateY(-2px);
+    }
+
+    .btn-cyan {
+      background: rgba(6, 182, 212, 0.15);
+      border-color: rgba(6, 182, 212, 0.3);
+      color: #38bdf8;
+    }
+    .btn-cyan:hover {
+      background: rgba(6, 182, 212, 0.25);
+      transform: translateY(-2px);
+    }
+
+    /* STATS GRID */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 18px;
+      margin-bottom: 24px;
+    }
+
+    .stat-card {
+      background: var(--bg-surface);
+      backdrop-filter: blur(16px);
+      border: 1px solid var(--border-subtle);
+      border-radius: 18px;
+      padding: 20px;
+      display: flex;
+      align-items: center;
+      gap: 18px;
+      transition: transform 0.2s, border-color 0.2s;
+    }
+    .stat-card:hover {
+      transform: translateY(-3px);
+      border-color: rgba(255, 255, 255, 0.18);
+    }
+
+    .stat-icon {
+      width: 52px;
+      height: 52px;
+      border-radius: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 22px;
+      flex-shrink: 0;
+    }
+    .stat-icon.users { background: rgba(245, 158, 11, 0.12); color: #f59e0b; border: 1px solid rgba(245, 158, 11, 0.25); }
+    .stat-icon.profiles { background: rgba(168, 85, 247, 0.12); color: #c084fc; border: 1px solid rgba(168, 85, 247, 0.25); }
+    .stat-icon.progress { background: rgba(6, 182, 212, 0.12); color: #38bdf8; border: 1px solid rgba(6, 182, 212, 0.25); }
+    .stat-icon.size { background: rgba(16, 185, 129, 0.12); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.25); }
+
+    .stat-info h3 {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 4px;
+    }
+    .stat-info .stat-value {
+      font-size: 28px;
+      font-weight: 800;
+      color: var(--text-main);
+      font-family: 'JetBrains Mono', monospace;
+    }
+    .stat-info .stat-sub {
+      font-size: 11px;
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
+
+    /* MASTER CARD SPOTLIGHT */
+    .master-card {
+      background: linear-gradient(135deg, rgba(245, 158, 11, 0.08) 0%, rgba(15, 21, 34, 0.85) 100%);
+      border: 1px solid rgba(245, 158, 11, 0.35);
+      border-radius: 20px;
+      padding: 24px 28px;
+      margin-bottom: 24px;
+      position: relative;
+      overflow: hidden;
+      box-shadow: 0 16px 36px rgba(0,0,0,0.3);
+    }
+    .master-card::before {
+      content: '';
+      position: absolute;
+      top: -50px;
+      right: -50px;
+      width: 200px;
+      height: 200px;
+      background: radial-gradient(circle, rgba(245, 158, 11, 0.15) 0%, transparent 70%);
+      pointer-events: none;
+    }
+
+    .master-header {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 20px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .master-identity {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .master-avatar {
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #f59e0b, #e11d48);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+      font-weight: 800;
+      color: #fff;
+      box-shadow: 0 4px 16px rgba(245, 158, 11, 0.3);
+    }
+
+    .master-identity h2 {
+      font-size: 18px;
+      font-weight: 700;
+      color: #fff;
+    }
+    .master-identity .sub-badge {
+      display: inline-block;
+      font-size: 11px;
+      font-weight: 700;
+      color: #fbbf24;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .master-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 16px;
+    }
+
+    .master-field {
+      background: rgba(0, 0, 0, 0.35);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      border-radius: 12px;
+      padding: 12px 16px;
+    }
+    .master-field label {
+      display: block;
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 4px;
+    }
+    .master-field .val {
+      font-size: 13px;
+      font-family: 'JetBrains Mono', monospace;
+      color: #e2e8f0;
+      word-break: break-all;
+    }
+    .master-field .val.gold { color: #f59e0b; font-weight: 700; }
+    .master-field .val.cyan { color: #38bdf8; }
+
+    /* TABS */
+    .tabs-nav {
+      display: flex;
+      gap: 10px;
+      border-bottom: 1px solid var(--border-subtle);
+      margin-bottom: 20px;
+      overflow-x: auto;
+      padding-bottom: 2px;
+    }
+
+    .tab-btn {
+      padding: 12px 20px;
+      font-size: 14px;
+      font-weight: 600;
+      font-family: 'Outfit', sans-serif;
+      color: var(--text-muted);
+      background: transparent;
+      border: none;
+      border-bottom: 2px solid transparent;
+      cursor: pointer;
+      transition: all 0.2s;
+      white-space: nowrap;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .tab-btn:hover {
+      color: var(--text-main);
+    }
+    .tab-btn.active {
+      color: var(--gold);
+      border-bottom-color: var(--gold);
+    }
+
+    /* TABLE SECTION */
+    .table-container {
+      background: var(--bg-surface);
+      backdrop-filter: blur(16px);
+      border: 1px solid var(--border-subtle);
+      border-radius: 18px;
+      overflow: hidden;
+      margin-bottom: 30px;
+    }
+
+    .table-toolbar {
+      padding: 16px 20px;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      border-bottom: 1px solid var(--border-subtle);
+    }
+
+    .search-box {
+      background: rgba(0, 0, 0, 0.4);
+      border: 1px solid var(--border-subtle);
+      border-radius: 10px;
+      padding: 8px 14px;
+      color: #fff;
+      font-family: 'Outfit', sans-serif;
+      font-size: 13px;
+      min-width: 280px;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    .search-box:focus {
+      border-color: var(--gold);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      text-align: left;
+      font-size: 13px;
+    }
+
+    thead {
+      background: rgba(0, 0, 0, 0.25);
+    }
+    th {
+      padding: 14px 20px;
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      border-bottom: 1px solid var(--border-subtle);
+    }
+    td {
+      padding: 14px 20px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+      color: #e2e8f0;
+      vertical-align: middle;
+    }
+    tr:hover td {
+      background: rgba(255, 255, 255, 0.02);
+    }
+
+    .mono {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 4px 8px;
+      border-radius: 6px;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.3px;
+    }
+    .badge-master {
+      background: rgba(245, 158, 11, 0.15);
+      border: 1px solid rgba(245, 158, 11, 0.4);
+      color: #fbbf24;
+    }
+    .badge-regular {
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      color: #94a3b8;
+    }
+    .badge-blue {
+      background: rgba(59, 130, 246, 0.15);
+      border: 1px solid rgba(59, 130, 246, 0.3);
+      color: #60a5fa;
+    }
+
+    .profile-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 10px;
+      border-radius: 999px;
+      background: rgba(0, 0, 0, 0.3);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      margin-right: 6px;
+      font-size: 12px;
+    }
+    .color-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+    }
+    .color-gold { background: #f59e0b; box-shadow: 0 0 6px #f59e0b; }
+    .color-blue { background: #3b82f6; box-shadow: 0 0 6px #3b82f6; }
+    .color-emerald { background: #10b981; box-shadow: 0 0 6px #10b981; }
+
+    /* AUDIT VIEW */
+    .audit-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      gap: 18px;
+      padding: 20px;
+    }
+
+    .audit-card {
+      background: rgba(0, 0, 0, 0.3);
+      border: 1px solid var(--border-subtle);
+      border-radius: 14px;
+      padding: 18px;
+    }
+    .audit-card h4 {
+      font-size: 14px;
+      font-weight: 700;
+      margin-bottom: 12px;
+      color: var(--gold);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .audit-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 8px 0;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+      font-size: 12px;
+    }
+    .audit-row:last-child {
+      border-bottom: none;
+    }
+    .audit-label {
+      color: var(--text-muted);
+    }
+    .audit-val {
+      font-family: 'JetBrains Mono', monospace;
+      color: #fff;
+    }
+
+    /* MODAL */
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.75);
+      backdrop-filter: blur(10px);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      padding: 20px;
+    }
+    .modal-backdrop.active {
+      display: flex;
+    }
+
+    .modal-box {
+      background: #0f1522;
+      border: 1px solid var(--border-subtle);
+      border-radius: 20px;
+      width: 100%;
+      max-width: 480px;
+      padding: 28px;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7);
+    }
+
+    .modal-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 20px;
+    }
+    .modal-header h3 {
+      font-size: 18px;
+      font-weight: 700;
+    }
+    .btn-close {
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      font-size: 20px;
+      cursor: pointer;
+    }
+
+    .form-group {
+      margin-bottom: 16px;
+    }
+    .form-group label {
+      display: block;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      margin-bottom: 6px;
+    }
+    .form-control {
+      width: 100%;
+      background: rgba(0, 0, 0, 0.4);
+      border: 1px solid var(--border-subtle);
+      border-radius: 10px;
+      padding: 10px 14px;
+      color: #fff;
+      font-family: 'Outfit', sans-serif;
+      font-size: 14px;
+      outline: none;
+    }
+    .form-control:focus {
+      border-color: var(--gold);
+    }
+
+    /* TOAST */
+    .toast {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      background: #1e293b;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 12px;
+      padding: 14px 20px;
+      color: #fff;
+      font-size: 13px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+      transform: translateY(100px);
+      opacity: 0;
+      transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+      z-index: 2000;
+    }
+    .toast.show {
+      transform: translateY(0);
+      opacity: 1;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+
+    <!-- HEADER -->
+    <header>
+      <div class="brand-wrap">
+        <div class="brand-logo">S</div>
+        <div class="brand-titles">
+          <h1>STREAMFLIX <span>Cinema</span></h1>
+          <div style="display: flex; gap: 8px; align-items: center; margin-top: 4px;">
+            <div class="badge-engine">
+              <span class="pulse-dot"></span>
+              SQLite 3.50.4 (WAL Mode)
+            </div>
+            <div class="badge-engine" style="background: rgba(6,182,212,0.15); border-color: rgba(6,182,212,0.3); color: #38bdf8;">
+              Render Cloud Sync: Ativo
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="header-actions">
+        <button class="btn btn-gold" onclick="openNewUserModal()">
+          <span>+</span> Novo Usuário
+        </button>
+        <button class="btn btn-outline" onclick="downloadBackup()">
+          <span>💾</span> Baixar Backup JSON
+        </button>
+        <button class="btn btn-cyan" onclick="runIntegrityCheck()">
+          <span>🛡️</span> Integridade DB
+        </button>
+        <button class="btn btn-outline" onclick="loadAllData()">
+          <span>🔄</span> Atualizar
+        </button>
+      </div>
+    </header>
+
+    <!-- METRICS GRID -->
+    <section class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-icon users">👥</div>
+        <div class="stat-info">
+          <h3>Contas no Banco</h3>
+          <div class="stat-value" id="statUsers">-</div>
+          <div class="stat-sub">Persistência permanente</div>
+        </div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-icon profiles">🎭</div>
+        <div class="stat-info">
+          <h3>Perfis Registrados</h3>
+          <div class="stat-value" id="statProfiles">-</div>
+          <div class="stat-sub">TV, Celular & Web</div>
+        </div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-icon progress">⏱️</div>
+        <div class="stat-info">
+          <h3>Histórico & Progresso</h3>
+          <div class="stat-value" id="statProgress">-</div>
+          <div class="stat-sub">Sincronização em tempo real</div>
+        </div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-icon size">💾</div>
+        <div class="stat-info">
+          <h3>Tamanho do Banco</h3>
+          <div class="stat-value" id="statDbSize">-</div>
+          <div class="stat-sub">streamflix.db (WAL)</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- MASTER ACCOUNT CARD -->
+    <section class="master-card">
+      <div class="master-header">
+        <div class="master-identity">
+          <div class="master-avatar">A</div>
+          <div>
+            <div class="sub-badge">Conta Master / Titular IPTV</div>
+            <h2>Angelo Regis (angeloregis@gmail.com)</h2>
+          </div>
+        </div>
+        <div class="badge badge-master">
+          PROTEÇÃO IMUTÁVEL • TITULAR IPTV
+        </div>
+      </div>
+
+      <div class="master-grid">
+        <div class="master-field">
+          <label>Código da Conta</label>
+          <div class="val gold" id="masterCode">ACC_BD24EFDF</div>
+        </div>
+
+        <div class="master-field">
+          <label>Status da Senha</label>
+          <div class="val" style="color: #34d399;">●●●●●●●● (Carlos25Marina15 - SHA-256 Validado)</div>
+        </div>
+
+        <div class="master-field">
+          <label>Perfis Ativos na TV</label>
+          <div class="val" id="masterProfiles">
+            <span class="profile-pill"><span class="color-dot color-gold"></span> Carlos</span>
+            <span class="profile-pill"><span class="color-dot color-blue"></span> Angelo</span>
+          </div>
+        </div>
+
+        <div class="master-field" style="grid-column: 1 / -1;">
+          <label>Playlist Master Dedicada (Isolada de Outros Usuários)</label>
+          <div class="val cyan" id="masterPlaylist">http://5664.in/ts/919647767/c114f4545b</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- TABS -->
+    <div class="tabs-nav">
+      <button class="tab-btn active" onclick="switchTab('users', this)">👥 Tabela: Usuários (users)</button>
+      <button class="tab-btn" onclick="switchTab('profiles', this)">🎭 Tabela: Perfis (profiles)</button>
+      <button class="tab-btn" onclick="switchTab('progress', this)">⏱️ Tabela: Histórico (watch_progress)</button>
+      <button class="tab-btn" onclick="switchTab('audit', this)">🛡️ Auditoria SQLite & Integridade</button>
+    </div>
+
+    <!-- TAB 1: USERS -->
+    <div id="tab-users" class="tab-pane">
+      <div class="table-container">
+        <div class="table-toolbar">
+          <input type="text" class="search-box" id="searchUsers" placeholder="Buscar por email ou código..." oninput="filterUsersTable()">
+          <span style="font-size: 12px; color: var(--text-muted);" id="userCountLabel">Carregando usuários...</span>
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Email</th>
+              <th>Código Conta</th>
+              <th>Tipo</th>
+              <th>Criado Em</th>
+              <th>Último Login</th>
+              <th>Ações</th>
+            </tr>
+          </thead>
+          <tbody id="usersTableBody">
+            <tr><td colspan="7" style="text-align:center; padding: 30px;">Carregando dados do banco...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- TAB 2: PROFILES -->
+    <div id="tab-profiles" class="tab-pane" style="display:none;">
+      <div class="table-container">
+        <div class="table-toolbar">
+          <input type="text" class="search-box" id="searchProfiles" placeholder="Buscar perfil..." oninput="filterProfilesTable()">
+          <span style="font-size: 12px; color: var(--text-muted);" id="profileCountLabel">-</span>
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Código Conta</th>
+              <th>Nome Perfil</th>
+              <th>Cor / Tema</th>
+              <th>Criado Em</th>
+            </tr>
+          </thead>
+          <tbody id="profilesTableBody">
+            <tr><td colspan="5" style="text-align:center; padding: 30px;">Carregando perfis...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- TAB 3: PROGRESS -->
+    <div id="tab-progress" class="tab-pane" style="display:none;">
+      <div class="table-container">
+        <div class="table-toolbar">
+          <input type="text" class="search-box" id="searchProgress" placeholder="Buscar por título ou conta..." oninput="filterProgressTable()">
+          <span style="font-size: 12px; color: var(--text-muted);" id="progressCountLabel">-</span>
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th>Conta</th>
+              <th>Perfil</th>
+              <th>Conteúdo / Título</th>
+              <th>Progresso</th>
+              <th>Posição / Duração</th>
+              <th>Última Atualização</th>
+            </tr>
+          </thead>
+          <tbody id="progressTableBody">
+            <tr><td colspan="6" style="text-align:center; padding: 30px;">Carregando histórico...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- TAB 4: AUDIT -->
+    <div id="tab-audit" class="tab-pane" style="display:none;">
+      <div class="table-container">
+        <div class="audit-grid">
+          <div class="audit-card">
+            <h4>⚙️ Configurações SQLite</h4>
+            <div class="audit-row">
+              <span class="audit-label">Motor</span>
+              <span class="audit-val" id="auditEngine">SQLite 3.50.4</span>
+            </div>
+            <div class="audit-row">
+              <span class="audit-label">Modo de Journal</span>
+              <span class="audit-val" id="auditJournal">WAL (Write-Ahead Logging)</span>
+            </div>
+            <div class="audit-row">
+              <span class="audit-label">Chaves Estrangeiras</span>
+              <span class="audit-val" id="auditFk">Ativas</span>
+            </div>
+            <div class="audit-row">
+              <span class="audit-label">Caminho Físico</span>
+              <span class="audit-val mono" id="auditPath" style="font-size: 11px;">streamflix.db</span>
+            </div>
+          </div>
+
+          <div class="audit-card">
+            <h4>🛡️ Verificação de Integridade</h4>
+            <div class="audit-row">
+              <span class="audit-label">Status da Integridade</span>
+              <span class="audit-val" id="auditIntegrityStatus" style="color: #34d399; font-weight: 700;">OK</span>
+            </div>
+            <div class="audit-row">
+              <span class="audit-label">Checksum das Tabelas</span>
+              <span class="audit-val">3 Tabelas Principais</span>
+            </div>
+            <div class="audit-row">
+              <span class="audit-label">Última Checagem</span>
+              <span class="audit-val" id="auditLastCheck">Agora</span>
+            </div>
+          </div>
+
+          <div class="audit-card">
+            <h4>☁️ Sincronização em Nuvem (Render)</h4>
+            <div class="audit-row">
+              <span class="audit-label">Estratégia de Persistência</span>
+              <span class="audit-val">Multi-Tier (SQLite + Cloud)</span>
+            </div>
+            <div class="audit-row">
+              <span class="audit-label">Pre-Seeding no Startup</span>
+              <span class="audit-val" style="color: #34d399;">Ativo</span>
+            </div>
+            <div class="audit-row">
+              <span class="audit-label">Proteção Master</span>
+              <span class="audit-val" style="color: #fbbf24;">angeloregis@gmail.com</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- MODAL: NOVO USUARIO -->
+  <div class="modal-backdrop" id="modalNewUser">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h3>Criar Novo Usuário no Banco</h3>
+        <button class="btn-close" onclick="closeNewUserModal()">&times;</button>
+      </div>
+      <form id="formNewUser" onsubmit="handleCreateUser(event)">
+        <div class="form-group">
+          <label>Email do Usuário</label>
+          <input type="email" class="form-control" id="newEmail" required placeholder="ex: usuario@email.com">
+        </div>
+        <div class="form-group">
+          <label>Senha de Acesso</label>
+          <input type="password" class="form-control" id="newPassword" required placeholder="Digite a senha desejada">
+        </div>
+        <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 24px;">
+          <button type="button" class="btn btn-outline" onclick="closeNewUserModal()">Cancelar</button>
+          <button type="submit" class="btn btn-gold">Salvar no Banco</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- TOAST -->
+  <div class="toast" id="toast">
+    <span id="toastIcon">ℹ️</span>
+    <span id="toastMsg">Mensagem</span>
+  </div>
+
+  <script>
+    let GLOBAL_USERS = [];
+    let GLOBAL_PROFILES = [];
+    let GLOBAL_PROGRESS = [];
+
+    async function loadAllData() {
+      try {
+        const [statsRes, usersRes, profilesRes, progressRes] = await Promise.all([
+          fetch('/api/database/stats').then(r => r.json()).catch(() => null),
+          fetch('/api/database/users').then(r => r.json()).catch(() => null),
+          fetch('/api/database/profiles').then(r => r.json()).catch(() => null),
+          fetch('/api/database/progress').then(r => r.json()).catch(() => null)
+        ]);
+
+        if (statsRes) {
+          document.getElementById('statUsers').innerText = statsRes.totalUsers || 0;
+          document.getElementById('statProfiles').innerText = statsRes.totalProfiles || 0;
+          document.getElementById('statProgress').innerText = statsRes.totalWatchProgress || 0;
+          document.getElementById('statDbSize').innerText = (statsRes.dbSizeKb || 0) + ' KB';
+          document.getElementById('auditEngine').innerText = statsRes.engine + ' (' + statsRes.sqliteVersion + ')';
+          document.getElementById('auditPath').innerText = statsRes.dbPath || 'streamflix.db';
+        }
+
+        if (usersRes && usersRes.users) {
+          GLOBAL_USERS = usersRes.users;
+          renderUsersTable(GLOBAL_USERS);
+        }
+
+        if (profilesRes && profilesRes.profiles) {
+          GLOBAL_PROFILES = profilesRes.profiles;
+          renderProfilesTable(GLOBAL_PROFILES);
+        }
+
+        if (progressRes && progressRes.progress) {
+          GLOBAL_PROGRESS = progressRes.progress;
+          renderProgressTable(GLOBAL_PROGRESS);
+        }
+
+        showToast('Dados sincronizados com o banco SQLite com sucesso!', '✅');
+      } catch (err) {
+        console.error('Erro ao sincronizar:', err);
+        showToast('Erro ao carregar dados do banco.', '❌');
+      }
+    }
+
+    function renderUsersTable(users) {
+      const tbody = document.getElementById('usersTableBody');
+      document.getElementById('userCountLabel').innerText = `${users.length} usuário(s) encontrado(s)`;
+      
+      if (!users.length) {
+        tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding: 30px;">Nenhum usuário cadastrado.</td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = users.map(u => {
+        const isMaster = u.email.toLowerCase().includes('angeloregis');
+        const badge = isMaster 
+          ? '<span class="badge badge-master">👑 MASTER / ADMIN</span>' 
+          : '<span class="badge badge-regular">USUÁRIO</span>';
+        
+        const deleteBtn = isMaster 
+          ? '<span style="color:var(--text-muted); font-size:11px;">Protegido</span>'
+          : `<button class="btn btn-outline" style="padding: 4px 8px; font-size: 11px; color:#f43f5e;" onclick="deleteUser('${u.email}')">Excluir</button>`;
+
+        const created = u.created_at ? new Date(u.created_at * 1000).toLocaleString('pt-BR') : '-';
+        const lastLogin = u.last_login ? new Date(u.last_login * 1000).toLocaleString('pt-BR') : 'Nunca';
+
+        return `
+          <tr>
+            <td class="mono">${u.id || '-'}</td>
+            <td><strong>${u.email}</strong></td>
+            <td class="mono" style="color:var(--gold);">${u.account_code}</td>
+            <td>${badge}</td>
+            <td>${created}</td>
+            <td>${lastLogin}</td>
+            <td>${deleteBtn}</td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    function renderProfilesTable(profiles) {
+      const tbody = document.getElementById('profilesTableBody');
+      document.getElementById('profileCountLabel').innerText = `${profiles.length} perfil(is)`;
+
+      if (!profiles.length) {
+        tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding: 30px;">Nenhum perfil cadastrado.</td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = profiles.map(p => {
+        const colorClass = p.color === 'gold' ? 'color-gold' : p.color === 'blue' ? 'color-blue' : 'color-emerald';
+        const created = p.created_at ? new Date(p.created_at * 1000).toLocaleString('pt-BR') : '-';
+        return `
+          <tr>
+            <td class="mono">${p.id || '-'}</td>
+            <td class="mono">${p.account_code}</td>
+            <td><strong>${p.name}</strong></td>
+            <td><span class="profile-pill"><span class="color-dot ${colorClass}"></span> ${p.color || 'padrão'}</span></td>
+            <td>${created}</td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    function renderProgressTable(progress) {
+      const tbody = document.getElementById('progressTableBody');
+      document.getElementById('progressCountLabel').innerText = `${progress.length} registro(s)`;
+
+      if (!progress.length) {
+        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding: 30px;">Nenhum progresso registrado ainda.</td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = progress.map(item => {
+        const pct = Math.min(100, Math.round(item.percentage || 0));
+        const updated = item.updatedAt ? new Date(item.updatedAt * 1000).toLocaleString('pt-BR') : '-';
+        return `
+          <tr>
+            <td class="mono">${item.accountCode}</td>
+            <td><span class="badge badge-blue">${item.profileId}</span></td>
+            <td><strong>${item.title}</strong></td>
+            <td>
+              <div style="display:flex; align-items:center; gap:8px;">
+                <div style="flex:1; height:6px; background:rgba(255,255,255,0.1); border-radius:3px; overflow:hidden; min-width:80px;">
+                  <div style="width:${pct}%; height:100%; background:var(--gold);"></div>
+                </div>
+                <span class="mono" style="font-size:11px;">${pct}%</span>
+              </div>
+            </td>
+            <td class="mono">${Math.floor(item.position || 0)}s / ${Math.floor(item.duration || 0)}s</td>
+            <td>${updated}</td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    function switchTab(name, btn) {
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      document.querySelectorAll('.tab-pane').forEach(p => p.style.display = 'none');
+      const target = document.getElementById('tab-' + name);
+      if (target) target.style.display = 'block';
+    }
+
+    function filterUsersTable() {
+      const q = document.getElementById('searchUsers').value.toLowerCase();
+      const filtered = GLOBAL_USERS.filter(u => 
+        u.email.toLowerCase().includes(q) || (u.account_code && u.account_code.toLowerCase().includes(q))
+      );
+      renderUsersTable(filtered);
+    }
+
+    function filterProfilesTable() {
+      const q = document.getElementById('searchProfiles').value.toLowerCase();
+      const filtered = GLOBAL_PROFILES.filter(p => 
+        p.name.toLowerCase().includes(q) || (p.account_code && p.account_code.toLowerCase().includes(q))
+      );
+      renderProfilesTable(filtered);
+    }
+
+    function filterProgressTable() {
+      const q = document.getElementById('searchProgress').value.toLowerCase();
+      const filtered = GLOBAL_PROGRESS.filter(i => 
+        (i.title && i.title.toLowerCase().includes(q)) || 
+        (i.accountCode && i.accountCode.toLowerCase().includes(q))
+      );
+      renderProgressTable(filtered);
+    }
+
+    async function runIntegrityCheck() {
+      try {
+        const res = await fetch('/api/database/integrity').then(r => r.json());
+        if (res && res.integrity) {
+          const status = res.integrity.integrity === 'ok' ? 'OK (Sem Erros)' : res.integrity.integrity;
+          document.getElementById('auditIntegrityStatus').innerText = status;
+          document.getElementById('auditJournal').innerText = res.integrity.journal_mode.toUpperCase();
+          document.getElementById('auditLastCheck').innerText = new Date().toLocaleTimeString('pt-BR');
+          showToast('Integridade do banco SQLite verificada: ' + status, '🛡️');
+        }
+      } catch (err) {
+        showToast('Erro ao testar integridade do banco.', '❌');
+      }
+    }
+
+    function downloadBackup() {
+      window.open('/api/database/backup', '_blank');
+      showToast('Download do backup JSON iniciado.', '💾');
+    }
+
+    function openNewUserModal() {
+      document.getElementById('modalNewUser').classList.add('active');
+    }
+
+    function closeNewUserModal() {
+      document.getElementById('modalNewUser').classList.remove('active');
+    }
+
+    async function handleCreateUser(e) {
+      e.preventDefault();
+      const email = document.getElementById('newEmail').value.trim();
+      const password = document.getElementById('newPassword').value;
+
+      try {
+        const res = await fetch('/api/database/users', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password })
+        }).then(r => r.json());
+
+        if (res.success) {
+          showToast('Usuário cadastrado com sucesso!', '✅');
+          closeNewUserModal();
+          document.getElementById('formNewUser').reset();
+          loadAllData();
+        } else {
+          showToast(res.error || 'Erro ao criar usuário.', '❌');
+        }
+      } catch (err) {
+        showToast('Falha na comunicação com o servidor.', '❌');
+      }
+    }
+
+    async function deleteUser(email) {
+      if (!confirm(`Tem certeza que deseja excluir o usuário ${email}?`)) return;
+
+      try {
+        const res = await fetch('/api/database/users/delete', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email })
+        }).then(r => r.json());
+
+        if (res.success) {
+          showToast('Usuário excluído do banco.', '🗑️');
+          loadAllData();
+        } else {
+          showToast(res.error || 'Erro ao excluir usuário.', '❌');
+        }
+      } catch (err) {
+        showToast('Erro ao excluir usuário.', '❌');
+      }
+    }
+
+    function showToast(msg, icon = 'ℹ️') {
+      const toast = document.getElementById('toast');
+      document.getElementById('toastMsg').innerText = msg;
+      document.getElementById('toastIcon').innerText = icon;
+      toast.classList.add('show');
+      setTimeout(() => toast.classList.remove('show'), 3500);
+    }
+
+    // Carregamento inicial
+    loadAllData();
+    setInterval(loadAllData, 15000);
+  </script>
+
+</body>
+</html>

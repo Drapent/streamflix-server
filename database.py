@@ -4,12 +4,14 @@ Uses SQLite for zero-loss, ACID persistent storage of:
 - Users (Credentials, Passwords hashed with SHA-256, Account Codes, Private Playlist URLs)
 - Profiles (Netflix-style user profiles per account)
 - Watch Progress ('Continuar Assistindo' cross-device playback state)
+Includes Admin API, WAL mode for concurrency, and Auto-Backup capabilities.
 """
 
 import sqlite3
 import json
 import time
 import os
+import hashlib
 from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent
@@ -24,6 +26,11 @@ MASTER_PLAYLIST = "http://5664.in/ts/919647767/c114f4545b"
 def get_connection():
     conn = sqlite3.connect(str(DB_PATH), timeout=20.0)
     conn.row_factory = sqlite3.Row
+    try:
+        conn.execute("PRAGMA journal_mode=WAL")
+        conn.execute("PRAGMA synchronous=NORMAL")
+    except Exception:
+        pass
     return conn
 
 def init_db():
@@ -186,6 +193,52 @@ def update_user_playlist(email, playlist_url):
     finally:
         conn.close()
 
+def delete_user(email):
+    clean = (email or "").strip().lower()
+    if clean in MASTER_EMAILS:
+        return False, "A conta Master não pode ser excluída."
+    conn = get_connection()
+    try:
+        with conn:
+            user = conn.execute("SELECT account_code FROM users WHERE email = ?", (clean,)).fetchone()
+            if not user:
+                return False, "Usuário não encontrado."
+            acode = user["account_code"]
+            conn.execute("DELETE FROM users WHERE email = ?", (clean,))
+            conn.execute("DELETE FROM profiles WHERE account_code = ?", (acode,))
+            conn.execute("DELETE FROM watch_progress WHERE account_code = ?", (acode,))
+        return True, "Usuário e dados excluídos com sucesso."
+    finally:
+        conn.close()
+
+def get_all_users():
+    conn = get_connection()
+    try:
+        rows = conn.execute("""
+            SELECT u.email, u.account_code, u.playlist_url, u.created_at,
+                   COUNT(p.id) as profile_count
+            FROM users u
+            LEFT JOIN profiles p ON u.account_code = p.account_code
+            GROUP BY u.email
+            ORDER BY u.created_at ASC
+        """).fetchall()
+        users = []
+        for r in rows:
+            is_master = r["email"] in MASTER_EMAILS
+            users.append({
+                "email": r["email"],
+                "accountCode": r["account_code"],
+                "playlistUrl": r["playlist_url"] if is_master else (r["playlist_url"][:45] + "..." if len(r["playlist_url"]) > 45 else r["playlist_url"]),
+                "fullPlaylistUrl": r["playlist_url"],
+                "isMaster": is_master,
+                "profileCount": r["profile_count"],
+                "createdAt": r["created_at"],
+                "createdFormatted": time.strftime("%d/%m/%Y %H:%M", time.localtime(r["created_at"])) if r["created_at"] else "-"
+            })
+        return users
+    finally:
+        conn.close()
+
 def get_profiles_by_account(account_code):
     conn = get_connection()
     try:
@@ -216,6 +269,31 @@ def get_profiles_by_account(account_code):
                     {"id": "p1", "name": "Principal", "avatar": "blue", "isKids": False, "createdAt": int(time.time())}
                 ]
         return result
+    finally:
+        conn.close()
+
+def get_all_profiles():
+    conn = get_connection()
+    try:
+        rows = conn.execute("""
+            SELECT p.id, p.account_code, p.name, p.avatar, p.is_kids, p.created_at, u.email
+            FROM profiles p
+            LEFT JOIN users u ON p.account_code = u.account_code
+            ORDER BY p.created_at ASC
+        """).fetchall()
+        profs = []
+        for r in rows:
+            profs.append({
+                "id": r["id"],
+                "accountCode": r["account_code"],
+                "email": r["email"] or "Desconhecido",
+                "name": r["name"],
+                "avatar": r["avatar"],
+                "isKids": bool(r["is_kids"]),
+                "createdAt": r["created_at"],
+                "createdFormatted": time.strftime("%d/%m/%Y %H:%M", time.localtime(r["created_at"])) if r["created_at"] else "-"
+            })
+        return profs
     finally:
         conn.close()
 
@@ -263,6 +341,14 @@ def get_progress(account_code, profile_id):
     finally:
         conn.close()
 
+def get_all_progress_count():
+    conn = get_connection()
+    try:
+        row = conn.execute("SELECT COUNT(*) as cnt FROM watch_progress").fetchone()
+        return row["cnt"] if row else 0
+    finally:
+        conn.close()
+
 def save_progress_item(account_code, profile_id, item_data):
     cid = str(item_data.get("contentId", ""))
     if not cid:
@@ -291,6 +377,93 @@ def delete_progress_item(account_code, profile_id, content_id):
                 WHERE account_code = ? AND profile_id = ? AND content_id = ?
             """, (account_code, profile_id, str(content_id)))
         return True
+    finally:
+        conn.close()
+
+def get_db_stats():
+    conn = get_connection()
+    try:
+        u_count = conn.execute("SELECT COUNT(*) as c FROM users").fetchone()["c"]
+        p_count = conn.execute("SELECT COUNT(*) as c FROM profiles").fetchone()["c"]
+        w_count = conn.execute("SELECT COUNT(*) as c FROM watch_progress").fetchone()["c"]
+        db_size = DB_PATH.stat().st_size if DB_PATH.exists() else 0
+        return {
+            "status": "healthy",
+            "engine": "SQLite 3",
+            "sqliteVersion": sqlite3.sqlite_version,
+            "dbPath": str(DB_PATH),
+            "dbSizeBytes": db_size,
+            "dbSizeKb": round(db_size / 1024, 2),
+            "totalUsers": u_count,
+            "totalProfiles": p_count,
+            "totalWatchProgress": w_count,
+            "masterEmail": "angeloregis@gmail.com",
+            "masterAccountCode": MASTER_CODE
+        }
+    finally:
+        conn.close()
+
+def export_backup_json():
+    conn = get_connection()
+    try:
+        users = [dict(r) for r in conn.execute("SELECT * FROM users").fetchall()]
+        profiles = [dict(r) for r in conn.execute("SELECT * FROM profiles").fetchall()]
+        progress = [dict(r) for r in conn.execute("SELECT * FROM watch_progress").fetchall()]
+        return {
+            "version": "1.0",
+            "exportedAt": int(time.time()),
+            "stats": get_db_stats(),
+            "users": users,
+            "profiles": profiles,
+            "watchProgress": progress
+        }
+    finally:
+        conn.close()
+
+
+def check_integrity():
+    conn = get_connection()
+    try:
+        row = conn.execute("PRAGMA integrity_check").fetchone()
+        journal_mode = conn.execute("PRAGMA journal_mode").fetchone()
+        foreign_keys = conn.execute("PRAGMA foreign_keys").fetchone()
+        return {
+            "integrity": row[0] if row else "unknown",
+            "journal_mode": journal_mode[0] if journal_mode else "unknown",
+            "foreign_keys": bool(foreign_keys[0]) if foreign_keys else False,
+            "timestamp": int(time.time())
+        }
+    finally:
+        conn.close()
+
+def get_recent_progress(limit=50):
+    conn = get_connection()
+    try:
+        rows = conn.execute("""
+            SELECT account_code, profile_id, content_id, data, updated_at
+            FROM watch_progress
+            ORDER BY updated_at DESC
+            LIMIT ?
+        """, (limit,)).fetchall()
+        result = []
+        for r in rows:
+            item_data = {}
+            try:
+                item_data = json.loads(r["data"])
+            except Exception:
+                pass
+            result.append({
+                "accountCode": r["account_code"],
+                "profileId": r["profile_id"],
+                "contentId": r["content_id"],
+                "updatedAt": r["updated_at"],
+                "title": item_data.get("title") or item_data.get("name") or r["content_id"],
+                "position": item_data.get("position", 0),
+                "duration": item_data.get("duration", 0),
+                "percentage": item_data.get("percentage", 0),
+                "type": item_data.get("type", "movie")
+            })
+        return result
     finally:
         conn.close()
 

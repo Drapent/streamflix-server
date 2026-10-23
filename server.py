@@ -22,6 +22,7 @@ from pathlib import Path
 import m3u_parser
 import stream_proxy
 import sync_hub
+import database
 from catalog_guardian import guardian
 
 BASE_DIR = Path(__file__).resolve().parent
@@ -1699,6 +1700,55 @@ class IPTVServerHandler(http.server.SimpleHTTPRequestHandler):
             parsed = urllib.parse.urlparse(self.path)
             path = parsed.path
             query = urllib.parse.parse_qs(parsed.query)
+
+            # Database Administration Dashboard & APIs
+            if path in ("/database", "/database/"):
+                db_html = STATIC_DIR / "database.html"
+                if db_html.exists():
+                    with open(db_html, "rb") as f:
+                        content = f.read()
+                    self.send_response(200)
+                    self.send_header("Content-Type", "text/html; charset=utf-8")
+                    self.send_header("Content-Length", str(len(content)))
+                    self.send_header("Access-Control-Allow-Origin", "*")
+                    self.end_headers()
+                    self.wfile.write(content)
+                    return
+                else:
+                    self.send_json({"error": "Painel do banco de dados não encontrado."}, 404)
+                    return
+
+            if path == "/api/database/stats":
+                self.send_json(database.get_db_stats())
+                return
+
+            if path == "/api/database/users":
+                self.send_json({"success": True, "users": database.get_all_users()})
+                return
+
+            if path == "/api/database/profiles":
+                self.send_json({"success": True, "profiles": database.get_all_profiles()})
+                return
+
+            if path == "/api/database/progress":
+                self.send_json({"success": True, "progress": database.get_recent_progress()})
+                return
+
+            if path == "/api/database/integrity":
+                self.send_json({"success": True, "integrity": database.check_integrity()})
+                return
+
+            if path == "/api/database/backup":
+                backup_data = database.export_backup_json()
+                data_bytes = json.dumps(backup_data, indent=2, ensure_ascii=False).encode("utf-8")
+                self.send_response(200)
+                self.send_header("Content-Type", "application/json; charset=utf-8")
+                self.send_header("Content-Disposition", 'attachment; filename="streamflix_database_backup.json"')
+                self.send_header("Content-Length", str(len(data_bytes)))
+                self.send_header("Access-Control-Allow-Origin", "*")
+                self.end_headers()
+                self.wfile.write(data_bytes)
+                return
 
             # API: Version & Auto-Update Check
             if path == "/api/version":
