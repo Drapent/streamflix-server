@@ -587,7 +587,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const playerLiveBadge = document.getElementById("playerLiveBadge");
   const playerQualityBadge = document.getElementById("playerQualityBadge");
   const chkUseProxy = document.getElementById("chkUseProxy");
-  if (chkUseProxy) chkUseProxy.checked = true;
+  if (chkUseProxy) chkUseProxy.checked = false;
   const playerStatusOverlay = document.getElementById("playerStatusOverlay");
   const playerStatusMessage = document.getElementById("playerStatusMessage");
   const playerSpinner = document.getElementById("playerSpinner");
@@ -768,7 +768,7 @@ document.addEventListener("DOMContentLoaded", () => {
   // Dual Player Engine Instances
   let hlsInstance = null;
   let mpegtsPlayer = null;
-  let useProxy = true;
+  let useProxy = false;
   let selectedFileContent = null;
   let hideControlsTimeout = null;
 
@@ -2420,7 +2420,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
     cleanupPlayers();
 
-    const streamUrl = useProxy ? apiUrl(`/proxy?url=${encodeURIComponent(channel.url)}`) : channel.url;
+    const isStandaloneTV = (typeof window !== "undefined" && (!!window.tizen || !!window.webapis || isSamsungTV() || (window.location && (window.location.protocol === "file:" || window.location.protocol === "app:" || window.location.protocol === "widget:"))));
+    const shouldProxy = useProxy && !isStandaloneTV && !isLocalServerOffline;
+    const streamUrl = shouldProxy ? apiUrl(`/proxy?url=${encodeURIComponent(channel.url)}`) : channel.url;
     const cleanUrl = channel.url.split("?")[0].toLowerCase();
     const isDirectVideoFile = /\.(mp4|mkv|webm|avi|m4v|mov)$/i.test(cleanUrl) ||
                               chType === "movie" ||
@@ -2486,7 +2488,7 @@ document.addEventListener("DOMContentLoaded", () => {
             }
           }).catch((err2) => {
             console.warn("[DirectPlay] Falha ao iniciar vídeo:", err2);
-            if (!useProxy) {
+            if (!useProxy && !isStandaloneTV && !isLocalServerOffline) {
               console.log("[DirectPlay] Alternando automaticamente para Proxy...");
               useProxy = true;
               if (chkUseProxy) chkUseProxy.checked = true;
@@ -2559,7 +2561,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
     streamReconnectTimer = setTimeout(() => {
       console.log(`[StreamReconnect] Tentativa ${streamReconnectAttempts}/${maxAttempts} para: ${channel.name || channel.title}`);
-      if (streamReconnectAttempts > 1 && !useProxy) {
+      const isStandaloneTV = (typeof window !== "undefined" && (!!window.tizen || !!window.webapis || isSamsungTV() || (window.location && (window.location.protocol === "file:" || window.location.protocol === "app:" || window.location.protocol === "widget:"))));
+      if (streamReconnectAttempts > 1 && !useProxy && !isStandaloneTV && !isLocalServerOffline) {
         useProxy = true;
         if (chkUseProxy) chkUseProxy.checked = true;
       }
@@ -2652,7 +2655,8 @@ document.addEventListener("DOMContentLoaded", () => {
             scheduleStreamReconnect(channel, "Rede instável HLS");
             return;
           }
-          if (!useProxy) {
+          const isStandaloneTV = (typeof window !== "undefined" && (!!window.tizen || !!window.webapis || isSamsungTV() || (window.location && (window.location.protocol === "file:" || window.location.protocol === "app:" || window.location.protocol === "widget:"))));
+          if (!useProxy && !isStandaloneTV && !isLocalServerOffline) {
             useProxy = true;
             chkUseProxy.checked = true;
             playChannel(channel);
@@ -2691,15 +2695,17 @@ document.addEventListener("DOMContentLoaded", () => {
           url: streamUrl
         }, {
           enableWorker: false,
-          enableStashBuffer: false,
-          stashInitialSize: 128 * 1024,
+          enableStashBuffer: true,
+          stashInitialSize: 256 * 1024,
           lazyLoad: false,
           lazyLoadMaxDuration: 0,
           liveBufferLatencyChasing: true,
+          liveBufferLatencyMaxLatency: 3.5,
+          liveBufferLatencyMinRemain: 0.8,
           liveSync: true,
           autoCleanupSourceBuffer: true,
-          autoCleanupMaxBackwardDuration: 120,
-          autoCleanupMinBackwardDuration: 60,
+          autoCleanupMaxBackwardDuration: 60,
+          autoCleanupMinBackwardDuration: 30,
           fixAudioTimestampGap: true
         });
 
@@ -2716,7 +2722,8 @@ document.addEventListener("DOMContentLoaded", () => {
             scheduleStreamReconnect(channel, "Buffer TS interrompido");
             return;
           }
-          if (!useProxy) {
+          const isStandaloneTV = (typeof window !== "undefined" && (!!window.tizen || !!window.webapis || isSamsungTV() || (window.location && (window.location.protocol === "file:" || window.location.protocol === "app:" || window.location.protocol === "widget:"))));
+          if (!useProxy && !isStandaloneTV && !isLocalServerOffline) {
             useProxy = true;
             chkUseProxy.checked = true;
             playChannel(channel);
@@ -2783,8 +2790,10 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   btnRetryStream.addEventListener("click", () => {
-    useProxy = true;
-    chkUseProxy.checked = true;
+    if (!isSamsungTV()) {
+      useProxy = false;
+      if (chkUseProxy) chkUseProxy.checked = false;
+    }
     if (activeChannel) playChannel(activeChannel);
   });
 
@@ -3216,13 +3225,50 @@ document.addEventListener("DOMContentLoaded", () => {
     clearBufferStallTimer();
     hideStatus();
   });
+  let bufferStallNudgeTimer = null;
+  function clearBufferStallTimer() {
+    if (bufferStallTimer) {
+      clearTimeout(bufferStallTimer);
+      bufferStallTimer = null;
+    }
+    if (bufferStallNudgeTimer) {
+      clearTimeout(bufferStallNudgeTimer);
+      bufferStallNudgeTimer = null;
+    }
+  }
+
   video.addEventListener("waiting", () => {
     clearBufferStallTimer();
-    // Só exibe o aviso visual de buffer se a parada durar mais de 1.2s.
-    // Micro-pausas instantâneas (< 1.2s) passam suavemente sem piscar a tela preta.
     bufferStallTimer = setTimeout(() => {
       showStatus("Armazenando buffer...", true);
-    }, 1200);
+    }, 1500);
+
+    // Watchdog de Buffer Nudge: se travar por mais de 3.2s, avança o playhead e descongela
+    bufferStallNudgeTimer = setTimeout(() => {
+      if (video && !video.paused) {
+        try {
+          if (video.buffered && video.buffered.length > 0) {
+            const bEnd = video.buffered.end(video.buffered.length - 1);
+            if (bEnd - video.currentTime > 0.3) {
+              console.log("[BufferWatchdog] Nudging playhead to buffer end:", bEnd);
+              video.currentTime = bEnd - 0.15;
+            }
+          }
+          video.play().catch(() => {});
+        } catch (e) {}
+      } else if (video && video.paused) {
+        try { video.play().catch(() => {}); } catch(e) {}
+      }
+      // Se travar por mais de 5s no player em TV Samsung, tenta hardware TS direto
+      if (isSamsungTV() && activeChannel && activeChannel.url) {
+        setTimeout(() => {
+          if (playerStatusOverlay && playerStatusOverlay.style.display !== "none" && activeChannel) {
+            console.log("[BufferWatchdog] Alternando para decodificação nativa de hardware da TV...");
+            startNativeTsPlayback(activeChannel.url, activeChannel);
+          }
+        }, 2000);
+      }
+    }, 3200);
   });
 
   // Fallback automático com Reconexão Resiliente quando o vídeo dispara erro de rede/CORS
@@ -3230,8 +3276,9 @@ document.addEventListener("DOMContentLoaded", () => {
     if (isCleaningUp) return;
     if (!video.src || video.src === window.location.href || video.src.endsWith("/")) return;
     console.error("[HTML5 Video Error]", video.error);
-    if (!useProxy && activeChannel) {
-      console.log("[Video Error Fallback] Alternando automaticamente para Proxy...");
+    const isStandaloneTV = (typeof window !== "undefined" && (!!window.tizen || !!window.webapis || isSamsungTV() || (window.location && (window.location.protocol === "file:" || window.location.protocol === "app:" || window.location.protocol === "widget:"))));
+    if (!useProxy && !isStandaloneTV && !isLocalServerOffline && activeChannel) {
+      console.log("[Video Error Fallback] Alternando para Proxy...");
       useProxy = true;
       if (chkUseProxy) chkUseProxy.checked = true;
       playChannel(activeChannel);
@@ -7411,9 +7458,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
   async function ensureDirectPlaylistLoaded(forceUrl) {
     const targetUrl = (forceUrl || (currentAuthUser && currentAuthUser.playlistUrl) || localStorage.getItem("iptv_playlist_url") || "").trim();
-    if (!targetUrl) return directCatalogCache;
 
-    if (directCatalogCache.playlistUrl === targetUrl && directCatalogCache.all.length > 0) {
+    if (directCatalogCache.all && directCatalogCache.all.length > 0) {
       return directCatalogCache;
     }
     if (directCatalogCache.loadingPromise) {
@@ -7421,162 +7467,65 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     directCatalogCache.loadingPromise = (async () => {
-      const creds = extractXtreamCredsFromUrl(targetUrl);
-      directCatalogCache.playlistUrl = targetUrl;
-      directCatalogCache.creds = creds;
-
-      if (creds) {
-        try {
-          const { baseUrl, username, password } = creds;
-          const apiBase = `${baseUrl}/player_api.php?username=${encodeURIComponent(username)}&password=${encodeURIComponent(password)}`;
-
-          // 1. Carrega todas as categorias em paralelo (~250ms total)
-          const [vodCatsRes, serCatsRes, liveCatsRes] = await Promise.all([
-            fetch(`${apiBase}&action=get_vod_categories`).then(r => r.ok ? r.json() : []).catch(() => []),
-            fetch(`${apiBase}&action=get_series_categories`).then(r => r.ok ? r.json() : []).catch(() => []),
-            fetch(`${apiBase}&action=get_live_categories`).then(r => r.ok ? r.json() : []).catch(() => [])
-          ]);
-
-          const vodCats = Array.isArray(vodCatsRes) ? vodCatsRes : [];
-          const serCats = Array.isArray(serCatsRes) ? serCatsRes : [];
-          const liveCats = Array.isArray(liveCatsRes) ? liveCatsRes : [];
-
-          directCatalogCache.vodCategories = vodCats;
-          directCatalogCache.serCategories = serCats;
-          directCatalogCache.liveCategories = liveCats;
-
-          const vodCatMap = {};
-          vodCats.forEach(c => { vodCatMap[c.category_id] = c.category_name; });
-          const serCatMap = {};
-          serCats.forEach(c => { serCatMap[c.category_id] = c.category_name; });
-          const liveCatMap = {};
-          liveCats.forEach(c => { liveCatMap[c.category_id] = c.category_name; });
-
-          // 2. Busca os itens das categorias principais imediatamente (~200ms)
-          const topVodId = vodCats[0] ? vodCats[0].category_id : "";
-          const topSerId = serCats[0] ? serCats[0].category_id : "";
-          const topLiveId = liveCats[0] ? liveCats[0].category_id : "";
-
-          const [topVodRes, topSerRes, topLiveRes] = await Promise.all([
-            topVodId ? fetch(`${apiBase}&action=get_vod_streams&category_id=${topVodId}`).then(r => r.ok ? r.json() : []).catch(() => []) : [],
-            topSerId ? fetch(`${apiBase}&action=get_series&category_id=${topSerId}`).then(r => r.ok ? r.json() : []).catch(() => []) : [],
-            topLiveId ? fetch(`${apiBase}&action=get_live_streams&category_id=${topLiveId}`).then(r => r.ok ? r.json() : []).catch(() => []) : []
-          ]);
-
-          const mapMovie = m => {
-            const ext = m.container_extension || "mp4";
-            const sUrl = `${baseUrl}/movie/${username}/${password}/${m.stream_id}.${ext}`;
-            const cat = vodCatMap[m.category_id] || "Filmes";
-            return {
-              id: "vod_" + m.stream_id,
-              stream_id: m.stream_id,
-              name: m.name || "Filme",
-              title: m.name || "Filme",
-              type: "movie",
-              poster: m.stream_icon || "",
-              backdrop: m.stream_icon || "",
-              logo: m.stream_icon || "",
-              url: sUrl,
-              streamUrl: sUrl,
-              rating: m.rating || "8.5",
-              category: cat,
-              group: cat,
-              subgroup: cat
-            };
-          };
-
-          const mapSeries = s => {
-            const cat = serCatMap[s.category_id] || "Séries";
-            const bd = (Array.isArray(s.backdrop_path) && s.backdrop_path[0]) ? s.backdrop_path[0] : (s.cover || "");
-            return {
-              id: "ser_" + s.series_id,
-              series_id: String(s.series_id),
-              name: s.name || "Série",
-              title: s.name || "Série",
-              type: "series",
-              poster: s.cover || "",
-              backdrop: bd,
-              logo: s.cover || "",
-              plot: s.plot || "",
-              rating: s.rating || "8.8",
-              category: cat,
-              group: cat,
-              subgroup: cat
-            };
-          };
-
-          const mapLive = l => {
-            const sUrl = `${baseUrl}/live/${username}/${password}/${l.stream_id}.ts`;
-            const cat = liveCatMap[l.category_id] || "Ao Vivo";
-            return {
-              id: "live_" + l.stream_id,
-              stream_id: l.stream_id,
-              name: l.name || "Canal",
-              title: l.name || "Canal",
-              type: "live",
-              poster: l.stream_icon || "",
-              backdrop: l.stream_icon || "",
-              logo: l.stream_icon || "",
-              url: sUrl,
-              streamUrl: sUrl,
-              category: cat,
-              group: cat,
-              subgroup: cat
-            };
-          };
-
-          const movies = Array.isArray(topVodRes) ? topVodRes.map(mapMovie) : [];
-          const series = Array.isArray(topSerRes) ? topSerRes.map(mapSeries) : [];
-          const live = Array.isArray(topLiveRes) ? topLiveRes.map(mapLive) : [];
-
-          if (topVodId) directCatalogCache.categoryStreams["movie_" + topVodId] = movies;
-          if (topSerId) directCatalogCache.categoryStreams["series_" + topSerId] = series;
-          if (topLiveId) directCatalogCache.categoryStreams["live_" + topLiveId] = live;
-
-          if (movies.length > 0 || series.length > 0 || live.length > 0) {
-            directCatalogCache.movies = movies;
-            directCatalogCache.series = series;
-            directCatalogCache.live = live;
-            directCatalogCache.all = [...movies, ...series, ...live];
-
-            // Cache leve para inicialização instantânea (0ms)
-            try {
-              localStorage.setItem("iptv_fast_catalog_cache", JSON.stringify({
-                playlistUrl: targetUrl,
-                vodCategories: vodCats,
-                serCategories: serCats,
-                liveCategories: liveCats,
-                movies: movies.slice(0, 40),
-                series: series.slice(0, 40),
-                live: live.slice(0, 40)
-              }));
-            } catch (e) {}
-
-            console.log(`[FastServerless] Catálogo inicial carregado em ~500ms: ${movies.length} filmes, ${series.length} séries, ${live.length} canais.`);
+      // 1. Tenta carregar do Cache Local Ultra Rápido (0ms)
+      try {
+        const cachedRaw = localStorage.getItem("iptv_fast_catalog_cache");
+        if (cachedRaw) {
+          const c = JSON.parse(cachedRaw);
+          if (c && (c.movies || c.series || c.live)) {
+            directCatalogCache.movies = c.movies || [];
+            directCatalogCache.series = c.series || [];
+            directCatalogCache.live = c.live || [];
+            directCatalogCache.vodCategories = c.vodCategories || [];
+            directCatalogCache.serCategories = c.serCategories || [];
+            directCatalogCache.liveCategories = c.liveCategories || [];
+            directCatalogCache.all = [...directCatalogCache.movies, ...directCatalogCache.series, ...directCatalogCache.live];
+            console.log(`[FastCatalog] Carregado do localStorage instantaneamente (0ms): ${directCatalogCache.all.length} itens.`);
             return directCatalogCache;
           }
-        } catch (err) {
-          console.warn("[FastServerless] Erro na consulta rápida Xtream:", err);
         }
+      } catch (e) {}
+
+      // 2. Tenta carregar o fast_catalog.json estático (~30ms)
+      const catalogUrls = [
+        "fast_catalog.json",
+        "./fast_catalog.json",
+        "https://cdn.jsdelivr.net/gh/Drapent/streamflix-server@main/static/fast_catalog.json",
+        "https://raw.githubusercontent.com/Drapent/streamflix-server/main/static/fast_catalog.json"
+      ];
+
+      for (const catUrl of catalogUrls) {
+        try {
+          const res = await fetchWithTimeout(catUrl, {}, 3500);
+          if (res && res.ok) {
+            const data = await res.json();
+            if (data && (data.movies || data.series || data.live)) {
+              directCatalogCache.movies = data.movies || [];
+              directCatalogCache.series = data.series || [];
+              directCatalogCache.live = data.live || [];
+              directCatalogCache.vodCategories = data.vodCategories || [];
+              directCatalogCache.serCategories = data.serCategories || [];
+              directCatalogCache.liveCategories = data.liveCategories || [];
+              directCatalogCache.all = [...directCatalogCache.movies, ...directCatalogCache.series, ...directCatalogCache.live];
+
+              try {
+                localStorage.setItem("iptv_fast_catalog_cache", JSON.stringify({
+                  movies: directCatalogCache.movies.slice(0, 150),
+                  series: directCatalogCache.series.slice(0, 150),
+                  live: directCatalogCache.live.slice(0, 150),
+                  vodCategories: directCatalogCache.vodCategories,
+                  serCategories: directCatalogCache.serCategories,
+                  liveCategories: directCatalogCache.liveCategories
+                }));
+              } catch (se) {}
+
+              console.log(`[FastCatalog] Carregado com sucesso de ${catUrl} (~50ms): ${directCatalogCache.all.length} itens!`);
+              return directCatalogCache;
+            }
+          }
+        } catch (err) {}
       }
 
-      // Fallback para download direto do arquivo .M3U
-      try {
-        const res = await fetch(targetUrl);
-        if (res.ok) {
-          const text = await res.text();
-          if (text && text.includes("#EXTINF")) {
-            const parsed = parseM3uTextDirect(text);
-            directCatalogCache.movies = parsed.movies;
-            directCatalogCache.series = parsed.series;
-            directCatalogCache.live = parsed.live;
-            directCatalogCache.all = parsed.all;
-            console.log(`[Serverless] Lista M3U carregada direto: ${parsed.all.length} itens.`);
-          }
-        }
-      } catch (e) {
-        console.warn("[Serverless] Aviso ao baixar M3U direto:", e);
-      }
       return directCatalogCache;
     })();
 
@@ -10174,13 +10123,18 @@ document.addEventListener("DOMContentLoaded", () => {
       }
 
       let activeCat = currentCatalogSubgroup;
-      if (!activeCat || activeCat === "Todos") {
-        activeCat = (catNames.length > 1) ? catNames[1] : "";
-      }
+      const allItems = apiType === "series" ? (directCatalogCache.series || []) : (apiType === "live" ? (directCatalogCache.live || []) : (directCatalogCache.movies || []));
 
-      let items = await fetchXtreamCategoryStreams(apiType, activeCat);
+      let items = [];
+      if (activeCat && activeCat !== "Todos") {
+        const catLow = activeCat.toLowerCase();
+        items = allItems.filter(it => {
+          const g = (it.group || it.category || it.subgroup || "").toLowerCase();
+          return g.includes(catLow) || catLow.includes(g);
+        });
+      }
       if (items.length === 0) {
-        items = apiType === "series" ? (directCatalogCache.series || []) : (apiType === "live" ? (directCatalogCache.live || []) : (directCatalogCache.movies || []));
+        items = allItems;
       }
 
       if (loadingState) loadingState.style.display = "none";
@@ -10191,7 +10145,7 @@ document.addEventListener("DOMContentLoaded", () => {
         return;
       }
 
-      items.slice(0, 120).forEach((item, idx) => {
+      items.slice(0, 150).forEach((item, idx) => {
         const card = createNetflixCard(item, { isLive: item.type === "live" }, 0, idx);
         grid.appendChild(card);
       });
