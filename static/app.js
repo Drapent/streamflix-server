@@ -2432,11 +2432,21 @@ document.addEventListener("DOMContentLoaded", () => {
                               cleanUrl.indexOf("/series/") !== -1;
     const isM3u8Stream = /\.m3u8$/i.test(cleanUrl) || channel.url.toLowerCase().includes(".m3u8");
 
+    // 4K UHD Live TV Smooth Acceleration (Samsung Smart TV Hardware Decoding):
+    const is4KStream = (channel.name || channel.title || "").toLowerCase().includes("4k") ||
+                       (channel.group || "").toLowerCase().includes("4k") ||
+                       (channel.subgroup || "").toLowerCase().includes("4k") ||
+                       (channel.name || channel.title || "").toLowerCase().includes("uhd") ||
+                       (channel.url || "").toLowerCase().includes("4k");
+
     // Engine Selection:
     if (isDirectVideoFile) {
       startDirectVideoPlayback(streamUrl, channel);
     } else if (isM3u8Stream) {
       startHlsPlayback(streamUrl, channel);
+    } else if (isSamsungTV() && is4KStream) {
+      console.log("[Player] Canal 4K UHD detectado na Smart TV Samsung -> Decodificação nativa de hardware 60fps ativada!");
+      startNativeTsPlayback(streamUrl, channel);
     } else {
       // Live raw MPEG-TS continuous stream (Xtream Codes output=ts)
       startMpegTsPlayback(streamUrl, channel);
@@ -7503,10 +7513,28 @@ document.addEventListener("DOMContentLoaded", () => {
               directCatalogCache.movies = data.movies || [];
               directCatalogCache.series = data.series || [];
               directCatalogCache.live = data.live || [];
-              directCatalogCache.vodCategories = data.vodCategories || [];
-              directCatalogCache.serCategories = data.serCategories || [];
+              directCatalogCache.animes = data.animes || [];
+              directCatalogCache.sports = data.sports || [];
+              directCatalogCache.kids = data.kids || [];
+              directCatalogCache.releases = data.releases || [];
+
+              directCatalogCache.movieCategories = data.movieCategories || data.vodCategories || [];
+              directCatalogCache.seriesCategories = data.seriesCategories || data.serCategories || [];
               directCatalogCache.liveCategories = data.liveCategories || [];
-              directCatalogCache.all = [...directCatalogCache.movies, ...directCatalogCache.series, ...directCatalogCache.live];
+              directCatalogCache.animeCategories = data.animeCategories || [];
+              directCatalogCache.sportsCategories = data.sportsCategories || [];
+              directCatalogCache.kidsCategories = data.kidsCategories || [];
+              directCatalogCache.releaseCategories = data.releaseCategories || [];
+
+              directCatalogCache.all = [
+                ...directCatalogCache.movies,
+                ...directCatalogCache.series,
+                ...directCatalogCache.live,
+                ...directCatalogCache.animes,
+                ...directCatalogCache.sports,
+                ...directCatalogCache.kids,
+                ...directCatalogCache.releases
+              ];
 
               try {
                 localStorage.setItem("iptv_fast_catalog_cache", JSON.stringify({
@@ -10038,12 +10066,14 @@ document.addEventListener("DOMContentLoaded", () => {
     if (netHistoryContainer) netHistoryContainer.style.display = "none";
     if (netSettingsContainer) netSettingsContainer.style.display = "none";
 
+    const netSearchContainer = document.getElementById("netSearchContainer");
+    if (netSearchContainer) netSearchContainer.style.display = "none";
+
     if (dest === "home") {
       if (netHomeContainer) netHomeContainer.style.display = "block";
       loadNetflixHome();
     } else if (dest === "live") {
-      if (netEpgContainer) netEpgContainer.style.display = "block";
-      loadEpgGuide("Todos");
+      openNetflixCatalogCategory("live");
     } else if (dest === "history") {
       if (netHistoryContainer) netHistoryContainer.style.display = "block";
       loadWatchHistory();
@@ -10059,10 +10089,10 @@ document.addEventListener("DOMContentLoaded", () => {
     } else if (dest === "logout") {
       showAuthScreen();
     } else if (dest === "search") {
-      if (netSearchInput) netSearchInput.focus();
+      openNetflixSearchView();
     } else {
-      // Catalog view (series, movies, categories, favorites, trending)
-      openNetflixCatalogCategory(dest === "categories" ? "movies" : dest);
+      // Catalog view (series, movies, animes, sports, kids, releases, favorites)
+      openNetflixCatalogCategory(dest);
     }
   }
 
@@ -10085,11 +10115,15 @@ document.addEventListener("DOMContentLoaded", () => {
     const titleEl = document.getElementById("netCatalogTitle");
     if (titleEl) {
       const titles = {
-        series: "Séries de TV",
         movies: "Filmes de Sucesso",
+        series: "Séries de TV",
         live: "Canais de TV ao Vivo",
+        animes: "Universo Animes",
+        sports: "Canais e Eventos de Esportes",
+        kids: "Espaço Infantil & Desenhos",
+        releases: "Lançamentos e Cinema",
         favorites: "Minha Lista de Favoritos",
-        trending: "Bombando na Netflix"
+        trending: "Bombando na Streamflix"
       };
       titleEl.textContent = titles[categoryType] || "Catálogo";
     }
@@ -10115,21 +10149,48 @@ document.addEventListener("DOMContentLoaded", () => {
     try {
       await ensureDirectPlaylistLoaded();
 
-      const catList = apiType === "series" ? directCatalogCache.serCategories : (apiType === "live" ? directCatalogCache.liveCategories : directCatalogCache.vodCategories);
-      const catNames = ["Todos", ...(catList || []).map(c => c.category_name).filter(Boolean)];
+      let allItems = [];
+      let catList = [];
+
+      if (type === "movies") {
+        allItems = directCatalogCache.movies || [];
+        catList = directCatalogCache.movieCategories || [];
+      } else if (type === "series") {
+        allItems = directCatalogCache.series || [];
+        catList = directCatalogCache.seriesCategories || [];
+      } else if (type === "live") {
+        allItems = directCatalogCache.live || [];
+        catList = directCatalogCache.liveCategories || [];
+      } else if (type === "animes") {
+        allItems = directCatalogCache.animes || [];
+        catList = directCatalogCache.animeCategories || [];
+      } else if (type === "sports") {
+        allItems = directCatalogCache.sports || [];
+        catList = directCatalogCache.sportsCategories || [];
+      } else if (type === "kids") {
+        allItems = directCatalogCache.kids || [];
+        catList = directCatalogCache.kidsCategories || [];
+      } else if (type === "releases") {
+        allItems = directCatalogCache.releases || [];
+        catList = directCatalogCache.releaseCategories || [];
+      } else if (type === "favorites") {
+        allItems = (typeof getFavoritesList === "function") ? getFavoritesList() : [];
+      } else {
+        allItems = directCatalogCache.movies || [];
+      }
+
+      const catNames = ["Todos", ...(catList || []).map(c => c.category_name || c.name).filter(Boolean)];
 
       if (chipsContainer && !append && catNames.length > 1) {
         renderCatalogChips(catNames.slice(0, 30), type);
       }
 
       let activeCat = currentCatalogSubgroup;
-      const allItems = apiType === "series" ? (directCatalogCache.series || []) : (apiType === "live" ? (directCatalogCache.live || []) : (directCatalogCache.movies || []));
-
-      let items = [];
+      let items = allItems;
       if (activeCat && activeCat !== "Todos") {
         const catLow = activeCat.toLowerCase();
         items = allItems.filter(it => {
-          const g = (it.group || it.category || it.subgroup || "").toLowerCase();
+          const g = (it.group || it.category || it.subgroup || it.name || it.title || "").toLowerCase();
           return g.includes(catLow) || catLow.includes(g);
         });
       }
@@ -10145,8 +10206,9 @@ document.addEventListener("DOMContentLoaded", () => {
         return;
       }
 
-      items.slice(0, 150).forEach((item, idx) => {
-        const card = createNetflixCard(item, { isLive: item.type === "live" }, 0, idx);
+      items.slice(0, 200).forEach((item, idx) => {
+        const isLiveItem = item.type === "live" || type === "live" || type === "sports";
+        const card = createNetflixCard(item, { isLive: isLiveItem }, 0, idx);
         grid.appendChild(card);
       });
     } catch (e) {
@@ -10362,6 +10424,11 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function performNetflixSearch(query) {
+    openNetflixSearchView();
+    const input = document.getElementById("netSearchInputMain");
+    if (input) input.value = query;
+    executeSearchFilter(query, "");
+    return;
     if (netHomeContainer) netHomeContainer.style.display = "none";
     if (netDownloadsContainer) netDownloadsContainer.style.display = "none";
     if (netCatalogContainer) netCatalogContainer.style.display = "block";
@@ -11478,6 +11545,137 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   // Initialize Netflix UI on document load
+  
+  // ==========================================================================
+  // FULLSCREEN STREAMFLIX SEARCH VIEW ENGINE (SMART TV D-PAD READY)
+  // ==========================================================================
+  let activeSearchTag = "";
+
+  function openNetflixSearchView() {
+    if (netHomeContainer) netHomeContainer.style.display = "none";
+    if (netCatalogContainer) netCatalogContainer.style.display = "none";
+    if (netDownloadsContainer) netDownloadsContainer.style.display = "none";
+    const netEpgContainer = document.getElementById("netEpgContainer");
+    const netHistoryContainer = document.getElementById("netHistoryContainer");
+    const netSettingsContainer = document.getElementById("netSettingsContainer");
+    if (netEpgContainer) netEpgContainer.style.display = "none";
+    if (netHistoryContainer) netHistoryContainer.style.display = "none";
+    if (netSettingsContainer) netSettingsContainer.style.display = "none";
+
+    const searchContainer = document.getElementById("netSearchContainer");
+    if (searchContainer) searchContainer.style.display = "block";
+
+    const input = document.getElementById("netSearchInputMain");
+    if (input) {
+      input.value = "";
+      setTimeout(() => input.focus(), 150);
+    }
+    activeSearchTag = "";
+    document.querySelectorAll("#netSearchQuickTags .sf-chip").forEach(c => {
+      c.classList.toggle("active", (c.dataset.searchTag || "") === "");
+    });
+    executeSearchFilter("");
+  }
+
+  function executeSearchFilter(query, tag) {
+    const grid = document.getElementById("netSearchGrid");
+    const emptyState = document.getElementById("netSearchEmpty");
+    const statusText = document.getElementById("netSearchStatusText");
+    if (!grid) return;
+
+    grid.innerHTML = "";
+    if (emptyState) emptyState.style.display = "none";
+
+    const allItems = directCatalogCache.all || [];
+    let filtered = allItems;
+
+    const q = (query || "").trim().toLowerCase();
+    const t = (tag !== undefined ? tag : activeSearchTag || "").trim().toLowerCase();
+
+    if (t) {
+      filtered = filtered.filter(it => {
+        const type = (it.type || "").toLowerCase();
+        const grp = (it.group || it.category || it.subgroup || "").toLowerCase();
+        const nm = (it.name || it.title || "").toLowerCase();
+        if (t === "filmes") return type === "movie";
+        if (t === "séries" || t === "series") return type === "series";
+        if (t === "ao vivo" || t === "canais") return type === "live";
+        if (t === "anime") return grp.includes("anime") || nm.includes("anime");
+        if (t === "esporte") return grp.includes("esporte") || grp.includes("sport") || grp.includes("premiere") || grp.includes("espn") || grp.includes("futebol");
+        if (t === "4k") return nm.includes("4k") || grp.includes("4k") || nm.includes("uhd");
+        if (t === "infantil") return grp.includes("infantil") || grp.includes("desenho") || grp.includes("disney");
+        return grp.includes(t) || nm.includes(t);
+      });
+    }
+
+    if (q) {
+      filtered = filtered.filter(it => {
+        const nm = (it.name || it.title || "").toLowerCase();
+        const grp = (it.group || it.category || it.subgroup || "").toLowerCase();
+        return nm.includes(q) || grp.includes(q);
+      });
+    }
+
+    const results = filtered.slice(0, 100);
+
+    if (statusText) {
+      if (!q && !t) {
+        statusText.textContent = `Títulos e canais em alta (${results.length} exibidos)`;
+      } else {
+        statusText.textContent = `${results.length} resultados encontrados`;
+      }
+    }
+
+    if (results.length === 0) {
+      if (emptyState) emptyState.style.display = "block";
+      return;
+    }
+
+    results.forEach((item, idx) => {
+      const isLiveItem = item.type === "live";
+      const card = createNetflixCard(item, { isLive: isLiveItem }, 0, idx);
+      grid.appendChild(card);
+    });
+  }
+
+  function setupStreamflixSearchEvents() {
+    const input = document.getElementById("netSearchInputMain");
+    const clearBtn = document.getElementById("netSearchClearBtn");
+    const quickTags = document.getElementById("netSearchQuickTags");
+
+    if (input) {
+      input.addEventListener("input", (e) => {
+        executeSearchFilter(e.target.value, activeSearchTag);
+      });
+      input.addEventListener("keydown", (e) => {
+        if (e.key === "Enter" || e.keyCode === 13) {
+          executeSearchFilter(input.value, activeSearchTag);
+        }
+      });
+    }
+
+    if (clearBtn) {
+      clearBtn.addEventListener("click", () => {
+        if (input) input.value = "";
+        executeSearchFilter("", activeSearchTag);
+        if (input) input.focus();
+      });
+    }
+
+    if (quickTags) {
+      quickTags.querySelectorAll(".sf-chip").forEach(chip => {
+        chip.addEventListener("click", () => {
+          quickTags.querySelectorAll(".sf-chip").forEach(c => c.classList.remove("active"));
+          chip.classList.add("active");
+          activeSearchTag = chip.dataset.searchTag || "";
+          executeSearchFilter(input ? input.value : "", activeSearchTag);
+        });
+      });
+    }
+  }
+
+  setupStreamflixSearchEvents();
+
   setupNetflixNavigation();
 
   // If authView is currently active on start, ensure immediate focus
