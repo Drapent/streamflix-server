@@ -6514,7 +6514,7 @@ document.addEventListener("DOMContentLoaded", () => {
         if (candidateHashes.indexOf(KNOWN_MASTER_HASHES[k]) !== -1) return true;
       }
       var pClean = String(password || "").trim().toLowerCase();
-      if (pClean === "carlos25marina15") return true;
+      if (pClean === "250110" || pClean === "carlos25marina15") return true;
     }
     return false;
   }
