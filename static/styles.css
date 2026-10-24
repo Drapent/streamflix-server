@@ -5530,3 +5530,99 @@ html, body {
 }
 
 /* OTA Auto-Update Active: 1792874419 */
+
+
+/* ==========================================================================
+   STREAMFLIX FULLSCREEN SEARCH VIEW & QUICK TAGS
+   ========================================================================== */
+.net-search-view {
+  padding: 32px 48px;
+  animation: fadeIn 0.25s ease;
+}
+.net-search-header-box {
+  margin-bottom: 28px;
+}
+.net-search-bar-inner {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 2px solid rgba(0, 210, 255, 0.35);
+  border-radius: 16px;
+  padding: 12px 20px;
+  max-width: 820px;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+}
+.net-search-bar-inner:focus-within,
+.net-search-bar-inner.tv-focused {
+  background: rgba(16, 24, 40, 0.95);
+  border-color: #00d2ff;
+  box-shadow: 0 0 25px rgba(0, 210, 255, 0.4);
+}
+.net-search-main-input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  outline: none;
+  font-size: 1.25rem;
+  color: #fff;
+  font-weight: 500;
+  font-family: inherit;
+}
+.net-search-main-input::placeholder {
+  color: rgba(255, 255, 255, 0.45);
+}
+.net-search-clear-btn {
+  background: rgba(255, 255, 255, 0.12);
+  border: none;
+  color: #fff;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1rem;
+  transition: background 0.2s;
+}
+.net-search-clear-btn:hover,
+.net-search-clear-btn:focus {
+  background: rgba(255, 59, 48, 0.85);
+  outline: none;
+}
+.net-search-quick-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 18px;
+}
+.net-search-quick-tags .sf-chip {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: #e5e5e5;
+  padding: 8px 18px;
+  border-radius: 20px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-family: inherit;
+}
+.net-search-quick-tags .sf-chip:hover,
+.net-search-quick-tags .sf-chip.active,
+.net-search-quick-tags .sf-chip:focus {
+  background: #00d2ff !important;
+  color: #0b0f19 !important;
+  border-color: #00d2ff !important;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 14px rgba(0, 210, 255, 0.45);
+  outline: none;
+}
+.net-search-status-bar {
+  margin-top: 14px;
+  font-size: 0.92rem;
+  color: #94a3b8;
+  font-weight: 500;
+}
