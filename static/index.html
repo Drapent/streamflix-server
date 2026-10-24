@@ -1641,27 +1641,38 @@
     var LOCAL_BUILD_TS = 1761338250;
     var OTA_VERSION_URLS = [
       "https://raw.githubusercontent.com/Drapent/streamflix-server/main/version.json",
-      "https://cdn.jsdelivr.net/gh/Drapent/streamflix-server@main/version.json"
+      "https://cdn.jsdelivr.net/gh/Drapent/streamflix-server@main/version.json",
+      "https://cdn.statically.io/gh/Drapent/streamflix-server/main/version.json"
     ];
     var OTA_CODE_MIRRORS = [
       {
+        name: "GitHub Direct",
         js: "https://raw.githubusercontent.com/Drapent/streamflix-server/main/static/app.js",
         css: "https://raw.githubusercontent.com/Drapent/streamflix-server/main/static/styles.css"
       },
       {
+        name: "jsDelivr Edge Brasil (SP/Fortaleza)",
         js: "https://cdn.jsdelivr.net/gh/Drapent/streamflix-server@main/static/app.js",
         css: "https://cdn.jsdelivr.net/gh/Drapent/streamflix-server@main/static/styles.css"
+      },
+      {
+        name: "Statically CDN",
+        js: "https://cdn.statically.io/gh/Drapent/streamflix-server/main/static/app.js",
+        css: "https://cdn.statically.io/gh/Drapent/streamflix-server/main/static/styles.css"
       }
     ];
 
-    // 1. EXECUÇÃO IMEDIATA (0ms de latência no boot da TV)
+    // 1. EXECUÇÃO IMEDIATA (0ms de espera na inicialização da TV)
     var activeCode = null;
     var activeTs = LOCAL_BUILD_TS;
     try {
       var savedTs = parseInt(localStorage.getItem("sf_ota_ts") || "0", 10);
       if (savedTs > LOCAL_BUILD_TS) {
-        activeCode = localStorage.getItem("sf_ota_js");
-        activeTs = savedTs;
+        var savedJs = localStorage.getItem("sf_ota_js");
+        if (savedJs && savedJs.length > 50000) {
+          activeCode = savedJs;
+          activeTs = savedTs;
+        }
       }
     } catch(e) {}
 
@@ -1671,15 +1682,15 @@
       document.body.appendChild(s);
     }
 
-    if (activeCode && activeCode.length > 50000) {
+    if (activeCode) {
       try {
         var otaScript = document.createElement("script");
         otaScript.type = "text/javascript";
         otaScript.text = activeCode;
         document.body.appendChild(otaScript);
-        console.log("[OTA Bootloader] Rodando versão OTA autônoma atualizada (TS: " + activeTs + ")!");
+        console.log("[OTA Bootloader Brasil] Rodando versao OTA atualizada (TS: " + activeTs + ")!");
       } catch(err) {
-        console.warn("[OTA Bootloader] Falha ao rodar código OTA, usando versão empacotada:", err);
+        console.warn("[OTA Bootloader] Falha ao rodar codigo OTA, usando versao empacotada:", err);
         try { localStorage.removeItem("sf_ota_js"); } catch(_) {}
         runBundledApp();
       }
@@ -1687,84 +1698,143 @@
       runBundledApp();
     }
 
-    // 2. VERIFICAÇÃO AUTOMÁTICA EM SEGUNDO PLANO (NÃO TRAVA O INÍCIO DO APP)
+    // 2. VERIFICAÇÃO AUTOMÁTICA EM SEGUNDO PLANO (CASCATA MULTI-CDN BRASIL)
+    var isChecking = false;
     function checkOtaUpdate() {
-      var checked = false;
-      OTA_VERSION_URLS.forEach(function(url) {
-        if (checked) return;
-        try {
-          var xhr = new XMLHttpRequest();
-          xhr.open("GET", url + "?_=" + Date.now(), true);
-          xhr.timeout = 4000;
-          xhr.onreadystatechange = function() {
-            if (xhr.readyState === 4 && xhr.status === 200) {
+      if (isChecking) return;
+      isChecking = true;
+      var vIndex = 0;
+
+      function tryNextVersionUrl() {
+        if (vIndex >= OTA_VERSION_URLS.length) {
+          isChecking = false;
+          return;
+        }
+        var url = OTA_VERSION_URLS[vIndex++];
+        var xhr = new XMLHttpRequest();
+        xhr.open("GET", url + "?_=" + Date.now(), true);
+        xhr.timeout = 5000;
+        xhr.onerror = tryNextVersionUrl;
+        xhr.ontimeout = tryNextVersionUrl;
+        xhr.onreadystatechange = function() {
+          if (xhr.readyState === 4) {
+            if (xhr.status === 200) {
               try {
                 var vData = JSON.parse(xhr.responseText);
                 var remoteTs = parseInt(vData.timestamp || "0", 10);
                 var currentBestTs = Math.max(LOCAL_BUILD_TS, parseInt(localStorage.getItem("sf_ota_ts") || "0", 10));
                 if (remoteTs > currentBestTs) {
-                  checked = true;
-                  console.log("[OTA] Nova versão disponível na Nuvem (" + remoteTs + " > " + currentBestTs + "). Baixando...");
+                  console.log("[OTA Brasil] Nova versao detectada (" + remoteTs + " > " + currentBestTs + "). Baixando...");
                   downloadOtaUpdate(remoteTs);
+                  isChecking = false;
+                  return;
                 }
               } catch(e) {}
-            }
-          };
-          xhr.send();
-        } catch(e) {}
-      });
-    }
-
-    // 3. DOWNLOAD RESILIENTE DO NOVO CÓDIGO E INSTALAÇÃO SILENCIOSA
-    function downloadOtaUpdate(newTs) {
-      var mirror = OTA_CODE_MIRRORS[0];
-      var xhrJs = new XMLHttpRequest();
-      xhrJs.open("GET", mirror.js + "?_=" + Date.now(), true);
-      xhrJs.timeout = 10000;
-      xhrJs.onreadystatechange = function() {
-        if (xhrJs.readyState === 4 && xhrJs.status === 200) {
-          var newJsCode = xhrJs.responseText;
-          if (newJsCode && newJsCode.length > 50000) {
-            try {
-              localStorage.setItem("sf_ota_js", newJsCode);
-              localStorage.setItem("sf_ota_ts", String(newTs));
-              
-              // Baixa o CSS também
-              var xhrCss = new XMLHttpRequest();
-              xhrCss.open("GET", mirror.css + "?_=" + Date.now(), true);
-              xhrCss.onreadystatechange = function() {
-                if (xhrCss.readyState === 4 && xhrCss.status === 200) {
-                  try {
-                    localStorage.setItem("sf_ota_css", xhrCss.responseText);
-                  } catch(_) {}
-                }
-                showOtaToast();
-              };
-              xhrCss.send();
-            } catch(e) {
-              console.warn("[OTA] Erro ao gravar nova versão no armazenamento da TV:", e);
+              isChecking = false;
+            } else {
+              tryNextVersionUrl();
             }
           }
+        };
+        try { xhr.send(); } catch(e) { tryNextVersionUrl(); }
+      }
+      tryNextVersionUrl();
+    }
+
+    // 3. DOWNLOAD RESILIENTE DO NOVO CÓDIGO COM INTEGRIDADE E RETRY EM CASCATA
+    function downloadOtaUpdate(newTs) {
+      var mirrorIndex = 0;
+
+      function tryNextMirror() {
+        if (mirrorIndex >= OTA_CODE_MIRRORS.length) {
+          console.warn("[OTA Brasil] Todos os mirrors falharam no download desta versao.");
+          return;
         }
-      };
-      xhrJs.send();
+        var mirror = OTA_CODE_MIRRORS[mirrorIndex++];
+        var xhrJs = new XMLHttpRequest();
+        xhrJs.open("GET", mirror.js + "?_=" + Date.now(), true);
+        xhrJs.timeout = 15000;
+        xhrJs.onerror = tryNextMirror;
+        xhrJs.ontimeout = tryNextMirror;
+        xhrJs.onreadystatechange = function() {
+          if (xhrJs.readyState === 4) {
+            if (xhrJs.status === 200) {
+              var newJsCode = xhrJs.responseText;
+              // Validacao rigorosa: garante integridade antes de gravar na TV
+              if (newJsCode && newJsCode.length > 50000 && (newJsCode.indexOf("STREAMFLIX") !== -1 || newJsCode.indexOf("function") !== -1)) {
+                try {
+                  localStorage.setItem("sf_ota_js", newJsCode);
+                  localStorage.setItem("sf_ota_ts", String(newTs));
+
+                  // Baixa estilos CSS em paralelo
+                  var xhrCss = new XMLHttpRequest();
+                  xhrCss.open("GET", mirror.css + "?_=" + Date.now(), true);
+                  xhrCss.timeout = 10000;
+                  xhrCss.onreadystatechange = function() {
+                    if (xhrCss.readyState === 4 && xhrCss.status === 200) {
+                      try { localStorage.setItem("sf_ota_css", xhrCss.responseText); } catch(_) {}
+                    }
+                    scheduleSafeOtaReload();
+                  };
+                  xhrCss.onerror = function() { scheduleSafeOtaReload(); };
+                  xhrCss.send();
+                } catch(e) {
+                  console.warn("[OTA Brasil] Erro ao gravar nova versao na TV:", e);
+                }
+              } else {
+                tryNextMirror();
+              }
+            } else {
+              tryNextMirror();
+            }
+          }
+        };
+        try { xhrJs.send(); } catch(e) { tryNextMirror(); }
+      }
+      tryNextMirror();
+    }
+
+    // 4. PROTEÇÃO DE REPRODUÇÃO: NUNCA INTERROMPE FILME OU CANAL AO VIVO
+    function scheduleSafeOtaReload() {
+      function canSafelyReload() {
+        var v = document.getElementById("videoPlayer");
+        if (v && !v.paused && v.currentTime > 0) return false;
+        var pLayer = document.getElementById("netflixPlayerLayer");
+        if (pLayer && pLayer.style.display === "block") return false;
+        return true;
+      }
+
+      if (canSafelyReload()) {
+        showOtaToast();
+      } else {
+        console.log("[OTA Brasil] Filme/Canal em reproducao. A atualizacao sera aplicada assim que sair do player!");
+        var waitPlayer = setInterval(function() {
+          if (canSafelyReload()) {
+            clearInterval(waitPlayer);
+            showOtaToast();
+          }
+        }, 5000);
+      }
     }
 
     function showOtaToast() {
-      var toast = document.createElement("div");
-      toast.id = "sfOtaNotification";
-      toast.style.cssText = "position:fixed;bottom:25px;right:25px;background:#00d2ff;color:#050914;font-family:'Inter',sans-serif;font-weight:700;font-size:16px;padding:14px 24px;border-radius:12px;box-shadow:0 8px 30px rgba(0,210,255,0.5);z-index:99999999;display:flex;align-items:center;gap:10px;animation:fadeIn 0.4s ease;";
-      toast.innerHTML = "<span>🚀 STREAMFLIX Atualizado Automaticamente! Reiniciando em 2s...</span>";
-      document.body.appendChild(toast);
+      var toast = document.getElementById("sfOtaNotification");
+      if (!toast) {
+        toast = document.createElement("div");
+        toast.id = "sfOtaNotification";
+        toast.style.cssText = "position:fixed;bottom:25px;right:25px;background:#00d2ff;color:#050914;font-family:'Inter',sans-serif;font-weight:700;font-size:16px;padding:14px 24px;border-radius:12px;box-shadow:0 8px 30px rgba(0,210,255,0.5);z-index:99999999;display:flex;align-items:center;gap:10px;animation:fadeIn 0.4s ease;";
+        toast.innerHTML = "<span>🚀 STREAMFLIX Atualizado Automaticamente! Reiniciando em 2s...</span>";
+        document.body.appendChild(toast);
+      }
 
       setTimeout(function() {
         window.location.reload();
       }, 2000);
     }
 
-    // Inicia verificação 2 segundos após a abertura
+    // Inicia verificacao 2s apos abertura
     setTimeout(checkOtaUpdate, 2000);
-    // E verifica periodicamente a cada 35 segundos enquanto o app estiver aberto!
+    // E verifica periodicamente a cada 35 segundos em qualquer Smart TV no Brasil!
     setInterval(checkOtaUpdate, 35000);
   })();
   </script>
