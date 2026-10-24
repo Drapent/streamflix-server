@@ -1,10 +1,9 @@
 """
 Database Persistence Module for STREAMFLIX Cinema
 Uses SQLite for zero-loss, ACID persistent storage of:
-- Users (Credentials, Passwords hashed with SHA-256, Account Codes, Private Playlist URLs)
-- Profiles (Netflix-style user profiles per account)
+- Users (Credentials, Passwords hashed with SHA-256, Deterministic Account Codes, Playlist URLs)
+- Profiles (Netflix / Prime Video style user profiles per account)
 - Watch Progress ('Continuar Assistindo' cross-device playback state)
-Includes Admin API, WAL mode for concurrency, and Auto-Backup capabilities.
 """
 
 import sqlite3
@@ -18,10 +17,42 @@ BASE_DIR = Path(__file__).resolve().parent
 DB_PATH = BASE_DIR / "streamflix.db"
 SYNC_DATA_FILE = BASE_DIR / "sync_data.json"
 
-MASTER_EMAILS = {"angeloregis@gmail.com", "angelo.regis@gmail.com"}
-MASTER_HASH = "bd24efdf0cfcc922a9bc5bbbaea9982479c240d0e8387a23b07779fc49cc70f2" # Carlos25Marina15
-MASTER_CODE = "ACC_BD24EFDF"
-MASTER_PLAYLIST = "http://5664.in/ts/919647767/c114f4545b"
+FAKE_CONTENT_IDS = {
+    "1415",
+    "cont_tlou", "cont_fallout", "cont_the_boys", "cont_one_piece", "cont_duna_2",
+    "tlou_demo", "fallout_demo", "theboys_demo", "dune2_demo",
+    "mov_1", "mov_2", "mov_3", "mov_4", "mov_5", "mov_6",
+    "ep_tb_1", "ep_tb_2", "ep_tb_3", "ep_tb_4",
+    "tr_tlou", "tr_duna_2", "tr_top_gun", "tr_wandinha", "tr_house_dragon", "tr_shogun",
+    "an_cur_1", "an_cur_2", "an_cur_3", "an_cur_4", "an_cur_5", "an_cur_6", "an_cur_7", "an_cur_8",
+    "hero_top_gun", "hero_tlou"
+}
+
+
+def normalize_email(email: str) -> str:
+    return (email or "").strip().lower()
+
+
+def make_account_code(email: str) -> str:
+    clean = normalize_email(email)
+    if not clean:
+        return "ACC_DEFAULT"
+    return "ACC_" + hashlib.sha256(clean.encode("utf-8")).hexdigest()[:8].upper()
+
+
+def is_valid_progress_item(item: dict) -> bool:
+    if not isinstance(item, dict):
+        return False
+    cid = str(item.get("contentId") or item.get("id") or "").strip()
+    if not cid or cid in FAKE_CONTENT_IDS:
+        return False
+    stream_url = str(item.get("streamUrl") or item.get("url") or "").strip()
+    if not stream_url or not (stream_url.startswith("http://") or stream_url.startswith("https://")):
+        return False
+    if "example.com" in stream_url:
+        return False
+    return True
+
 
 def get_connection():
     conn = sqlite3.connect(str(DB_PATH), timeout=20.0)
@@ -33,10 +64,17 @@ def get_connection():
         pass
     return conn
 
+
 def init_db():
     conn = get_connection()
     try:
         with conn:
+            conn.execute("""
+                CREATE TABLE IF NOT EXISTS system_meta (
+                    key TEXT PRIMARY KEY,
+                    value TEXT NOT NULL
+                )
+            """)
             conn.execute("""
                 CREATE TABLE IF NOT EXISTS users (
                     email TEXT PRIMARY KEY COLLATE NOCASE,
@@ -70,81 +108,59 @@ def init_db():
             """)
             conn.execute("CREATE INDEX IF NOT EXISTS idx_progress_account_profile ON watch_progress(account_code, profile_id)")
 
-            # 1. Garante a conta Master Oficial de Angelo Regis
-            for m_email in MASTER_EMAILS:
-                conn.execute("""
-                    INSERT INTO users (email, password_hash, account_code, playlist_url, created_at)
-                    VALUES (?, ?, ?, ?, ?)
-                    ON CONFLICT(email) DO UPDATE SET
-                        password_hash = excluded.password_hash,
-                        account_code = excluded.account_code,
-                        playlist_url = excluded.playlist_url
-                """, (m_email, MASTER_HASH, MASTER_CODE, MASTER_PLAYLIST, 1790407508))
+            # Verifica se o Reset Completo v3 já foi executado
+            reset_row = conn.execute("SELECT value FROM system_meta WHERE key = 'clean_reset_v3'").fetchone()
+            if not reset_row:
+                conn.execute("DELETE FROM users")
+                conn.execute("DELETE FROM profiles")
+                conn.execute("DELETE FROM watch_progress")
+                conn.execute("INSERT INTO system_meta (key, value) VALUES ('clean_reset_v3', '1')")
+                if SYNC_DATA_FILE.exists():
+                    try:
+                        with open(SYNC_DATA_FILE, "w", encoding="utf-8") as f:
+                            json.dump({"accounts": {}, "accounts_data": {}, "profiles": [], "progress": {}}, f)
+                    except Exception:
+                        pass
 
-            # 2. Garante os perfis oficiais Master (Carlos e Angelo)
-            conn.execute("""
-                INSERT OR IGNORE INTO profiles (id, account_code, name, avatar, is_kids, created_at)
-                VALUES (?, ?, ?, ?, ?, ?)
-            """, ("p_1790407508065", MASTER_CODE, "Carlos", "gold", 0, 1790407508))
-            conn.execute("""
-                INSERT OR IGNORE INTO profiles (id, account_code, name, avatar, is_kids, created_at)
-                VALUES (?, ?, ?, ?, ?, ?)
-            """, ("p_1790717094118", MASTER_CODE, "Angelo", "blue", 0, 1790717093))
-
-            # 3. Migra dados legados do sync_data.json se existirem
-            if SYNC_DATA_FILE.exists():
-                try:
-                    with open(SYNC_DATA_FILE, "r", encoding="utf-8") as f:
-                        sdata = json.load(f)
-                    
-                    # Migra contas
-                    accounts = sdata.get("accounts", {})
-                    for em, acc in accounts.items():
-                        c_em = em.strip().lower()
-                        if c_em:
-                            phash = acc.get("passwordHash", "")
-                            acode = acc.get("accountCode", f"ACC_{phash[:8].upper()}")
-                            purl = acc.get("playlistUrl", "")
-                            if c_em not in MASTER_EMAILS and purl == MASTER_PLAYLIST:
-                                purl = "" # Nunca vaza a playlist do master para terceiros
-                            cat = acc.get("createdAt", int(time.time()))
-                            conn.execute("""
-                                INSERT OR IGNORE INTO users (email, password_hash, account_code, playlist_url, created_at)
-                                VALUES (?, ?, ?, ?, ?)
-                            """, (c_em, phash, acode, purl, cat))
-
-                    # Migra perfis
-                    accounts_data = sdata.get("accounts_data", {})
-                    for acode, adata in accounts_data.items():
-                        for p in adata.get("profiles", []):
-                            pid = p.get("id")
-                            pname = p.get("name")
-                            pavatar = p.get("avatar", "blue")
-                            pkids = 1 if p.get("isKids") else 0
-                            pcat = p.get("createdAt", int(time.time()))
-                            if pid and pname:
-                                conn.execute("""
-                                    INSERT OR IGNORE INTO profiles (id, account_code, name, avatar, is_kids, created_at)
-                                    VALUES (?, ?, ?, ?, ?, ?)
-                                """, (pid, acode, pname, pavatar, pkids, pcat))
-
-                        # Migra progresso
-                        for pid, items in adata.get("progress", {}).items():
-                            for item in items:
-                                cid = str(item.get("contentId", ""))
-                                if cid:
-                                    uat = item.get("updatedAt", int(time.time()))
-                                    conn.execute("""
-                                        INSERT OR REPLACE INTO watch_progress (account_code, profile_id, content_id, data, updated_at)
-                                        VALUES (?, ?, ?, ?, ?)
-                                    """, (acode, pid, cid, json.dumps(item, ensure_ascii=False), uat))
-                except Exception as ex:
-                    print(f"[Database Migration Notice] {ex}")
+            # Limpa qualquer item falso existente no watch_progress
+            rows = conn.execute("SELECT account_code, profile_id, content_id, data FROM watch_progress").fetchall()
+            for r in rows:
+                cid = str(r["content_id"])
+                should_delete = cid in FAKE_CONTENT_IDS
+                if not should_delete:
+                    try:
+                        parsed = json.loads(r["data"])
+                        if not is_valid_progress_item(parsed):
+                            should_delete = True
+                    except Exception:
+                        should_delete = True
+                if should_delete:
+                    conn.execute(
+                        "DELETE FROM watch_progress WHERE account_code = ? AND profile_id = ? AND content_id = ?",
+                        (r["account_code"], r["profile_id"], cid)
+                    )
     finally:
         conn.close()
 
+
+def reset_all_accounts():
+    """Executa um reset completo apagando todas as contas, perfis e histórico."""
+    conn = get_connection()
+    try:
+        with conn:
+            conn.execute("DELETE FROM users")
+            conn.execute("DELETE FROM profiles")
+            conn.execute("DELETE FROM watch_progress")
+        if SYNC_DATA_FILE.exists():
+            with open(SYNC_DATA_FILE, "w", encoding="utf-8") as f:
+                json.dump({"accounts": {}, "accounts_data": {}, "profiles": [], "progress": {}}, f)
+        return True
+    finally:
+        conn.close()
+
+
 def get_user_by_email(email):
-    clean = (email or "").strip().lower()
+    clean = normalize_email(email)
     if not clean:
         return None
     conn = get_connection()
@@ -156,8 +172,23 @@ def get_user_by_email(email):
     finally:
         conn.close()
 
+
+def get_user_by_account_code(account_code):
+    if not account_code:
+        return None
+    conn = get_connection()
+    try:
+        row = conn.execute("SELECT * FROM users WHERE account_code = ?", (account_code,)).fetchone()
+        if row:
+            return dict(row)
+        return None
+    finally:
+        conn.close()
+
+
 def save_user(email, password_hash, account_code, playlist_url):
-    clean = (email or "").strip().lower()
+    clean = normalize_email(email)
+    acode = account_code or make_account_code(clean)
     conn = get_connection()
     try:
         with conn:
@@ -168,13 +199,14 @@ def save_user(email, password_hash, account_code, playlist_url):
                     password_hash = excluded.password_hash,
                     account_code = excluded.account_code,
                     playlist_url = excluded.playlist_url
-            """, (clean, password_hash, account_code, playlist_url, int(time.time())))
+            """, (clean, password_hash, acode, playlist_url, int(time.time())))
         return True
     finally:
         conn.close()
 
+
 def update_user_password(email, new_hash):
-    clean = (email or "").strip().lower()
+    clean = normalize_email(email)
     conn = get_connection()
     try:
         with conn:
@@ -183,8 +215,9 @@ def update_user_password(email, new_hash):
     finally:
         conn.close()
 
+
 def update_user_playlist(email, playlist_url):
-    clean = (email or "").strip().lower()
+    clean = normalize_email(email)
     conn = get_connection()
     try:
         with conn:
@@ -193,10 +226,9 @@ def update_user_playlist(email, playlist_url):
     finally:
         conn.close()
 
+
 def delete_user(email):
-    clean = (email or "").strip().lower()
-    if clean in MASTER_EMAILS:
-        return False, "A conta Master não pode ser excluída."
+    clean = normalize_email(email)
     conn = get_connection()
     try:
         with conn:
@@ -211,6 +243,7 @@ def delete_user(email):
     finally:
         conn.close()
 
+
 def get_all_users():
     conn = get_connection()
     try:
@@ -224,13 +257,12 @@ def get_all_users():
         """).fetchall()
         users = []
         for r in rows:
-            is_master = r["email"] in MASTER_EMAILS
             users.append({
                 "email": r["email"],
                 "accountCode": r["account_code"],
-                "playlistUrl": r["playlist_url"] if is_master else (r["playlist_url"][:45] + "..." if len(r["playlist_url"]) > 45 else r["playlist_url"]),
+                "playlistUrl": r["playlist_url"],
                 "fullPlaylistUrl": r["playlist_url"],
-                "isMaster": is_master,
+                "isMaster": False,
                 "profileCount": r["profile_count"],
                 "createdAt": r["created_at"],
                 "createdFormatted": time.strftime("%d/%m/%Y %H:%M", time.localtime(r["created_at"])) if r["created_at"] else "-"
@@ -238,6 +270,7 @@ def get_all_users():
         return users
     finally:
         conn.close()
+
 
 def get_profiles_by_account(account_code):
     conn = get_connection()
@@ -248,7 +281,7 @@ def get_profiles_by_account(account_code):
             WHERE account_code = ? 
             ORDER BY created_at ASC
         """, (account_code,)).fetchall()
-        
+
         result = []
         for r in rows:
             result.append({
@@ -260,18 +293,14 @@ def get_profiles_by_account(account_code):
                 "createdAt": r["created_at"]
             })
         if not result:
-            if account_code == MASTER_CODE:
-                result = [
-                    {"id": "p_1790407508065", "name": "Carlos", "avatar": "gold", "isKids": False, "createdAt": 1790407508},
-                    {"id": "p_1790717094118", "name": "Angelo", "avatar": "blue", "isKids": False, "createdAt": 1790717093}
-                ]
-            else:
-                result = [
-                    {"id": "p1", "name": "Principal", "avatar": "blue", "isKids": False, "createdAt": int(time.time())}
-                ]
+            default_id = f"p_{account_code.lower()}_1" if account_code else "p1"
+            result = [
+                {"id": default_id, "name": "Principal", "avatar": "blue", "color": "blue", "isKids": False, "createdAt": int(time.time())}
+            ]
         return result
     finally:
         conn.close()
+
 
 def get_all_profiles():
     conn = get_connection()
@@ -299,6 +328,7 @@ def get_all_profiles():
     finally:
         conn.close()
 
+
 def save_profile(account_code, profile_id, name, avatar, is_kids=False):
     conn = get_connection()
     try:
@@ -307,6 +337,7 @@ def save_profile(account_code, profile_id, name, avatar, is_kids=False):
                 INSERT INTO profiles (id, account_code, name, avatar, is_kids, created_at)
                 VALUES (?, ?, ?, ?, ?, ?)
                 ON CONFLICT(id) DO UPDATE SET
+                    account_code = excluded.account_code,
                     name = excluded.name,
                     avatar = excluded.avatar,
                     is_kids = excluded.is_kids
@@ -314,6 +345,7 @@ def save_profile(account_code, profile_id, name, avatar, is_kids=False):
         return True
     finally:
         conn.close()
+
 
 def delete_profile(account_code, profile_id):
     conn = get_connection()
@@ -324,6 +356,7 @@ def delete_profile(account_code, profile_id):
         return True
     finally:
         conn.close()
+
 
 def get_progress(account_code, profile_id):
     conn = get_connection()
@@ -336,12 +369,15 @@ def get_progress(account_code, profile_id):
         items = []
         for r in rows:
             try:
-                items.append(json.loads(r["data"]))
+                parsed = json.loads(r["data"])
+                if is_valid_progress_item(parsed):
+                    items.append(parsed)
             except Exception:
                 pass
         return items
     finally:
         conn.close()
+
 
 def get_all_progress_count():
     conn = get_connection()
@@ -351,8 +387,11 @@ def get_all_progress_count():
     finally:
         conn.close()
 
+
 def save_progress_item(account_code, profile_id, item_data):
-    cid = str(item_data.get("contentId", ""))
+    if not is_valid_progress_item(item_data):
+        return False
+    cid = str(item_data.get("contentId") or item_data.get("id") or "")
     if not cid:
         return False
     uat = int(item_data.get("updatedAt", time.time()))
@@ -370,6 +409,7 @@ def save_progress_item(account_code, profile_id, item_data):
     finally:
         conn.close()
 
+
 def delete_progress_item(account_code, profile_id, content_id):
     conn = get_connection()
     try:
@@ -381,6 +421,7 @@ def delete_progress_item(account_code, profile_id, content_id):
         return True
     finally:
         conn.close()
+
 
 def get_db_stats():
     conn = get_connection()
@@ -398,12 +439,11 @@ def get_db_stats():
             "dbSizeKb": round(db_size / 1024, 2),
             "totalUsers": u_count,
             "totalProfiles": p_count,
-            "totalWatchProgress": w_count,
-            "masterEmail": "angeloregis@gmail.com",
-            "masterAccountCode": MASTER_CODE
+            "totalWatchProgress": w_count
         }
     finally:
         conn.close()
+
 
 def export_backup_json():
     conn = get_connection()
@@ -412,7 +452,7 @@ def export_backup_json():
         profiles = [dict(r) for r in conn.execute("SELECT * FROM profiles").fetchall()]
         progress = [dict(r) for r in conn.execute("SELECT * FROM watch_progress").fetchall()]
         return {
-            "version": "1.0",
+            "version": "3.0",
             "exportedAt": int(time.time()),
             "stats": get_db_stats(),
             "users": users,
@@ -438,6 +478,7 @@ def check_integrity():
     finally:
         conn.close()
 
+
 def get_recent_progress(limit=50):
     conn = get_connection()
     try:
@@ -454,6 +495,8 @@ def get_recent_progress(limit=50):
                 item_data = json.loads(r["data"])
             except Exception:
                 pass
+            if not is_valid_progress_item(item_data):
+                continue
             result.append({
                 "accountCode": r["account_code"],
                 "profileId": r["profile_id"],
@@ -468,6 +511,7 @@ def get_recent_progress(limit=50):
         return result
     finally:
         conn.close()
+
 
 # Inicializa banco automaticamente ao importar
 init_db()

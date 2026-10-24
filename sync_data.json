@@ -1,38 +1,42 @@
 {
-  "accountCode": "PADRAO",
+  "accountCode": "ACC_BD24EFDF",
   "profiles": [
     {
-      "id": "p1",
-      "name": "Principal",
-      "avatar": "blue",
+      "id": "p_1790407508065",
+      "name": "Carlos",
+      "avatar": "gold",
+      "color": "gold",
       "isKids": false,
-      "createdAt": 1792703228
+      "createdAt": 1790407508
+    },
+    {
+      "id": "p_1790717094118",
+      "name": "Angelo",
+      "avatar": "blue",
+      "color": "blue",
+      "isKids": false,
+      "createdAt": 1790717093
     }
   ],
   "progress": {
-    "p1": []
+    "p_1790407508065": [],
+    "p_1790717094118": []
   },
   "accounts": {
-    "angelo.regis@gmail.com": {
-      "email": "angelo.regis@gmail.com",
-      "passwordHash": "bd24efdf0cfcc922a9bc5bbbaea9982479c240d0e8387a23b07779fc49cc70f2",
-      "playlistUrl": "http://5664.in/ts/919647767/c114f4545b",
-      "accountCode": "ACC_BD24EFDF",
-      "createdAt": 1790407508
-    },
     "angeloregis@gmail.com": {
-      "email": "angelo.regis@gmail.com",
-      "passwordHash": "bd24efdf0cfcc922a9bc5bbbaea9982479c240d0e8387a23b07779fc49cc70f2",
-      "playlistUrl": "http://5664.in/ts/919647767/c114f4545b",
-      "accountCode": "ACC_BD24EFDF",
-      "createdAt": 1790407508
-    },
-    "teste_db@exemplo.com": {
-      "email": "teste_db@exemplo.com",
-      "passwordHash": "6c92798b422f57bd6a4cbbc815556c040a2e0a67b13aa8e033ccc2f060315039",
-      "playlistUrl": "https://example.com/demo.m3u",
-      "accountCode": "ACC_6C92798B",
-      "createdAt": 1792734164
+      "email": "angeloregis@gmail.com",
+      "passwordHash": "a6ae4410fca6067af1e9436d6bbe15798773271df1176ad14c273911e814db50",
+      "passwordHashes": [
+        "233f2170623276d41b26b4f8211ed6907cc38be008dfb50e1e25c6c767d1495c",
+        "a6ae4410fca6067af1e9436d6bbe15798773271df1176ad14c273911e814db50",
+        "a861a037c320a5554958c9af45e22b141e1eb16f31688ba213ed016a8b15f2fa",
+        "bd24efdf0cfcc922a9bc5bbbaea9982479c240d0e8387a23b07779fc49cc70f2",
+        "ec3916deb48fdb00ae020ffdc3fe0cb671038eff5c8174d67b558708a296f1a0"
+      ],
+      "playlistUrl": "http://ruife.in/get.php?username=919647767&password=c114f4545b&type=m3u_plus&output=ts",
+      "accountCode": "ACC_C6D63566",
+      "createdAt": 1792869870501,
+      "updatedAt": 1792869870501
     }
   },
   "accounts_data": {
@@ -42,6 +46,7 @@
           "id": "p_1790407508065",
           "name": "Carlos",
           "avatar": "gold",
+          "color": "gold",
           "isKids": false,
           "createdAt": 1790407508
         },
@@ -49,47 +54,20 @@
           "id": "p_1790717094118",
           "name": "Angelo",
           "avatar": "blue",
+          "color": "blue",
           "isKids": false,
           "createdAt": 1790717093
         }
       ],
       "progress": {
-        "p_1790407508065": [
-          {
-            "contentId": "1415",
-            "title": "O Dia Que Durou 21 Anos (2012)",
-            "seriesTitle": null,
-            "season": null,
-            "episode": null,
-            "streamUrl": "",
-            "poster": "https://image.tmdb.org/t/p/w185/rbJzNu0dlb1dsamzd2EtheNXXdM.jpg",
-            "type": "movie",
-            "positionMs": 1041000,
-            "durationMs": 4751000,
-            "progressPercent": 21.9,
-            "updatedAt": 1792707977,
-            "device": "Desktop"
-          }
-        ]
-      }
-    },
-    "ACC_6C92798B": {
-      "profiles": [
-        {
-          "id": "p1",
-          "name": "Principal",
-          "avatar": "blue",
-          "isKids": false,
-          "createdAt": 1792734164
-        }
-      ],
-      "progress": {
-        "p1": []
+        "p_1790407508065": [],
+        "p_1790717094118": []
       },
       "favorites": [],
       "favoritesUpdatedAt": 0,
-      "catalogVersion": 0,
-      "catalogUpdatedAt": ""
+      "catalogVersion": 1,
+      "catalogUpdatedAt": "2026-10-24 12:20",
+      "activeProfileId": "p_1790407508065"
     }
   }
 }

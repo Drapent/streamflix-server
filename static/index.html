@@ -2,1302 +2,1701 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>STREAMFLIX Cinema 4K - Login & Perfis pelo Celular</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>STREAMFLIX Cinema 4K - Samsung Smart TV & BTV</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800;900&display=swap" rel="stylesheet">
-  <style>
-    :root {
-      --bg-dark: #070a14;
-      --card-bg: rgba(15, 23, 42, 0.85);
-      --neon-cyan: #00D2FF;
-      --neon-blue: #0070F3;
-      --neon-purple: #7928CA;
-      --netflix-red: #E50914;
-      --text-main: #f8fafc;
-      --text-muted: #94a3b8;
-      --radius: 18px;
-    }
-
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-      -webkit-tap-highlight-color: transparent;
-    }
-
-    body {
-      font-family: 'Outfit', sans-serif;
-      background-color: var(--bg-dark);
-      background-image: 
-        radial-gradient(circle at 10% 20%, rgba(229, 9, 20, 0.15) 0%, transparent 40%),
-        radial-gradient(circle at 90% 80%, rgba(0, 210, 255, 0.15) 0%, transparent 40%),
-        radial-gradient(circle at 50% 50%, rgba(121, 40, 202, 0.1) 0%, transparent 60%);
-      color: var(--text-main);
-      min-height: 100vh;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      padding: 20px 16px;
-    }
-
-    .container {
-      width: 100%;
-      max-width: 440px;
-      background: var(--card-bg);
-      border: 1px solid rgba(255, 255, 255, 0.12);
-      border-radius: var(--radius);
-      box-shadow: 0 25px 60px rgba(0, 0, 0, 0.8), 0 0 35px rgba(0, 210, 255, 0.1);
-      backdrop-filter: blur(20px);
-      padding: 28px 22px;
-      text-align: center;
-      position: relative;
-      overflow: hidden;
-    }
-
-    .container::before {
-      content: '';
-      position: absolute;
-      top: 0;
-      left: 0;
-      right: 0;
-      height: 4px;
-      background: linear-gradient(90deg, #E50914, #7928CA, #00D2FF);
-    }
-
-    .brand-header {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 10px;
-      margin-bottom: 20px;
-    }
-
-    .brand-title {
-      font-size: 1.45rem;
-      font-weight: 900;
-      letter-spacing: -0.5px;
-      text-transform: uppercase;
-    }
-
-    .brand-accent {
-      color: var(--netflix-red);
-    }
-
-    .brand-badge {
-      background: linear-gradient(135deg, #FF0055, #7928CA);
-      font-size: 0.65rem;
-      font-weight: 800;
-      padding: 3px 7px;
-      border-radius: 6px;
-      letter-spacing: 0.5px;
-      vertical-align: middle;
-      margin-left: 4px;
-    }
-
-    .tv-detected-pill {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      background: rgba(0, 210, 255, 0.1);
-      border: 1px solid rgba(0, 210, 255, 0.3);
-      padding: 6px 14px;
-      border-radius: 20px;
-      font-size: 0.82rem;
-      font-weight: 700;
-      color: var(--neon-cyan);
-      margin-bottom: 16px;
-    }
-
-    .tv-detected-dot {
-      width: 8px;
-      height: 8px;
-      border-radius: 50%;
-      background: #00ff88;
-      box-shadow: 0 0 8px #00ff88;
-      animation: pulse 1.5s infinite;
-    }
-
-    @keyframes pulse {
-      0%, 100% { opacity: 1; transform: scale(1); }
-      50% { opacity: 0.4; transform: scale(0.85); }
-    }
-
-    h1 {
-      font-size: 1.35rem;
-      font-weight: 800;
-      margin-bottom: 6px;
-      letter-spacing: -0.3px;
-    }
-
-    .subtitle {
-      font-size: 0.88rem;
-      color: var(--text-muted);
-      margin-bottom: 20px;
-      line-height: 1.45;
-    }
-
-    .code-input-wrap {
-      background: rgba(0, 0, 0, 0.4);
-      border: 1px solid rgba(255, 255, 255, 0.08);
-      border-radius: 14px;
-      padding: 12px;
-      margin-bottom: 20px;
-    }
-
-    .code-label {
-      font-size: 0.72rem;
-      font-weight: 700;
-      color: #94a3b8;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-      display: block;
-      margin-bottom: 6px;
-    }
-
-    .code-input {
-      width: 100%;
-      background: transparent;
-      border: 2px dashed rgba(0, 210, 255, 0.4);
-      border-radius: 10px;
-      padding: 10px;
-      color: #fff;
-      font-size: 1.5rem;
-      font-weight: 900;
-      letter-spacing: 6px;
-      text-align: center;
-      outline: none;
-      box-shadow: inset 0 2px 6px rgba(0,0,0,0.5), 0 0 20px rgba(0, 210, 255, 0.15);
-      transition: all 0.2s;
-    }
-
-    .code-input:focus {
-      border-color: var(--neon-cyan);
-      box-shadow: inset 0 2px 6px rgba(0,0,0,0.5), 0 0 25px rgba(0, 210, 255, 0.4);
-    }
-
-    /* Tabs */
-    .auth-tabs-row {
-      display: flex;
-      gap: 6px;
-      background: rgba(0, 0, 0, 0.4);
-      padding: 5px;
-      border-radius: 14px;
-      margin-bottom: 18px;
-      border: 1px solid rgba(255, 255, 255, 0.08);
-    }
-
-    .auth-tab-btn {
-      flex: 1;
-      padding: 10px 4px;
-      background: transparent;
-      border: none;
-      border-radius: 10px;
-      color: var(--text-muted);
-      font-size: 0.82rem;
-      font-weight: 700;
-      cursor: pointer;
-      transition: all 0.2s;
-    }
-
-    .auth-tab-btn.active {
-      background: linear-gradient(135deg, #00D2FF 0%, #0070F3 100%);
-      color: #fff;
-      box-shadow: 0 4px 15px rgba(0, 210, 255, 0.35);
-    }
-
-    /* Form Fields */
-    .form-group {
-      margin-bottom: 13px;
-      text-align: left;
-    }
-
-    label {
-      display: block;
-      font-size: 0.74rem;
-      font-weight: 700;
-      color: #cbd5e1;
-      margin-bottom: 5px;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-    }
-
-    input[type="text"], input[type="email"], input[type="password"] {
-      width: 100%;
-      padding: 12px 14px;
-      background: rgba(8, 12, 22, 0.75);
-      border: 1px solid rgba(255, 255, 255, 0.16);
-      border-radius: 11px;
-      color: #fff;
-      font-size: 0.94rem;
-      outline: none;
-      transition: border-color 0.2s, box-shadow 0.2s;
-    }
-
-    input:focus {
-      border-color: var(--neon-cyan);
-      box-shadow: 0 0 16px rgba(0, 210, 255, 0.3);
-    }
-
-    .field-hint {
-      font-size: 0.72rem;
-      color: var(--text-muted);
-      margin-top: 4px;
-      line-height: 1.3;
-    }
-
-    /* Buttons */
-    .btn-submit-main {
-      width: 100%;
-      padding: 15px 18px;
-      background: linear-gradient(135deg, #E50914 0%, #B81D24 50%, #8A2BE2 100%);
-      border: none;
-      border-radius: 14px;
-      color: #fff;
-      font-size: 1rem;
-      font-weight: 800;
-      letter-spacing: 0.5px;
-      cursor: pointer;
-      box-shadow: 0 6px 25px rgba(229, 9, 20, 0.45);
-      margin-top: 8px;
-      transition: transform 0.15s, opacity 0.2s, box-shadow 0.2s;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 10px;
-    }
-
-    .btn-submit-main:active {
-      transform: scale(0.97);
-    }
-
-    .btn-submit-main:disabled {
-      opacity: 0.5;
-      cursor: not-allowed;
-    }
-
-    /* Alert */
-    .alert-box {
-      margin-top: 16px;
-      padding: 12px 16px;
-      border-radius: 12px;
-      font-size: 0.88rem;
-      font-weight: 600;
-      line-height: 1.4;
-      display: none;
-      text-align: left;
-    }
-
-    .alert-error {
-      background: rgba(229, 9, 20, 0.2);
-      border: 1px solid rgba(229, 9, 20, 0.5);
-      color: #ff858a;
-    }
-
-    .alert-success {
-      background: rgba(0, 255, 136, 0.18);
-      border: 1px solid rgba(0, 255, 136, 0.45);
-      color: #00ff88;
-    }
-
-    /* Success Card */
-    .success-card {
-      display: none;
-      text-align: center;
-      padding: 16px 4px;
-    }
-
-    .success-icon {
-      font-size: 3.5rem;
-      margin-bottom: 10px;
-      animation: bounce 0.6s ease;
-    }
-
-    @keyframes bounce {
-      0%, 100% { transform: translateY(0); }
-      50% { transform: translateY(-12px); }
-    }
-
-    /* Mobile Profiles UI */
-    .mob-profiles-grid {
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-      margin-top: 10px;
-    }
-
-    .mob-profile-item {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      background: rgba(255, 255, 255, 0.05);
-      border: 1px solid rgba(255, 255, 255, 0.12);
-      border-radius: 14px;
-      padding: 12px 14px;
-      transition: transform 0.15s, border-color 0.2s;
-    }
-
-    .mob-profile-left {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-    }
-
-    .mob-profile-avatar-circle {
-      width: 44px;
-      height: 44px;
-      border-radius: 12px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 1.5rem;
-      color: #000;
-      font-weight: bold;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-    }
-
-    .mob-profile-info {
-      text-align: left;
-    }
-
-    .mob-profile-name {
-      font-size: 1rem;
-      font-weight: 800;
-      color: #fff;
-    }
-
-    .mob-profile-badge {
-      font-size: 0.68rem;
-      font-weight: 700;
-      color: #ff9f1c;
-      background: rgba(255, 159, 28, 0.15);
-      padding: 2px 6px;
-      border-radius: 6px;
-      display: inline-block;
-      margin-top: 2px;
-    }
-
-    .mob-profile-actions {
-      display: flex;
-      gap: 6px;
-    }
-
-    .btn-mob-edit, .btn-mob-delete {
-      background: rgba(255, 255, 255, 0.08);
-      border: 1px solid rgba(255, 255, 255, 0.16);
-      border-radius: 8px;
-      padding: 6px 10px;
-      font-size: 0.78rem;
-      font-weight: 700;
-      color: #cbd5e1;
-      cursor: pointer;
-      transition: all 0.2s;
-    }
-
-    .btn-mob-edit:active, .btn-mob-delete:active {
-      transform: scale(0.95);
-    }
-
-    .btn-mob-delete {
-      color: #ff6b72;
-      border-color: rgba(255, 107, 114, 0.3);
-    }
-
-    .btn-add-profile-mob {
-      background: linear-gradient(135deg, #00D2FF 0%, #0070F3 100%);
-      border: none;
-      border-radius: 12px;
-      color: #fff;
-      font-weight: 800;
-      font-size: 0.85rem;
-      padding: 10px 16px;
-      cursor: pointer;
-      box-shadow: 0 4px 14px rgba(0, 210, 255, 0.35);
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-    }
-
-    .mob-avatar-picker {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 10px;
-      margin-top: 8px;
-    }
-
-    .mob-avatar-opt {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 6px;
-      padding: 12px 6px;
-      border-radius: 14px;
-      border: 2px solid transparent;
-      cursor: pointer;
-      background: rgba(255, 255, 255, 0.04);
-      transition: all 0.2s;
-    }
-
-    .mob-avatar-opt-circle {
-      width: 44px;
-      height: 44px;
-      border-radius: 12px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 1.5rem;
-      color: #000;
-    }
-
-    .mob-avatar-opt-name {
-      font-size: 0.72rem;
-      font-weight: 700;
-      color: #94a3b8;
-    }
-
-    .mob-avatar-opt.selected {
-      border-color: #00D2FF;
-      background: rgba(0, 210, 255, 0.15);
-      box-shadow: 0 0 15px rgba(0, 210, 255, 0.35);
-    }
-
-    .mob-avatar-opt.selected .mob-avatar-opt-name {
-      color: #fff;
-    }
-
-    /* Modal Overlay */
-    .mob-modal-overlay {
-      position: fixed;
-      inset: 0;
-      background: rgba(0,0,0,0.85);
-      backdrop-filter: blur(8px);
-      z-index: 1000;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 16px;
-    }
-
-    .mob-modal-card {
-      background: #0f172a;
-      border: 1px solid rgba(0, 210, 255, 0.3);
-      border-radius: 20px;
-      width: 100%;
-      max-width: 420px;
-      padding: 22px;
-      box-shadow: 0 20px 60px rgba(0,0,0,0.9);
-      text-align: left;
-    }
-  </style>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Outfit:wght@500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css?v=20261024_06">
+  <script src="hls.min.js"></script>
+  <script src="mpegts.js"></script>
+  <script>
+    window.onerror = function(msg, url, line, col, error) {
+      var box = document.getElementById("tvDiagnosticsBox");
+      if (box) {
+        box.style.display = "block";
+        box.innerHTML = "<b>[Erro Smart TV]</b>: " + msg + " (" + (url || "").split("/").pop() + ":" + line + ")";
+      }
+    };
+  </script>
 </head>
 <body>
-  <div class="container">
-    <div class="brand-header">
-      <svg viewBox="0 0 48 48" width="40" height="40" fill="none">
-        <defs>
-          <linearGradient id="logoG" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stop-color="#E50914" />
-            <stop offset="50%" stop-color="#7928CA" />
-            <stop offset="100%" stop-color="#00D2FF" />
-          </linearGradient>
-        </defs>
-        <rect x="3" y="3" width="42" height="42" rx="14" fill="#070a14" stroke="url(#logoG)" stroke-width="2.5"/>
-        <path d="M18 13.5C18 12.2 19.4 11.4 20.5 12.1L33.2 20.6C34.2 21.3 34.2 22.7 33.2 23.4L20.5 31.9C19.4 32.6 18 31.8 18 30.5V13.5Z" fill="url(#logoG)"/>
-      </svg>
-      <div class="brand-title">STREAM<span class="brand-accent">FLIX</span> <span class="brand-badge">CINEMA 4K</span></div>
+  <div id="tvDiagnosticsBox" style="display:none; position:fixed; top:12px; left:12px; right:12px; background:rgba(229,9,20,0.95); color:#fff; padding:12px 18px; border-radius:8px; z-index:9999999; font-size:16px; font-weight:bold; box-shadow:0 6px 20px rgba(0,0,0,0.8);"></div>
+  <div class="app-root">
+
+    <!-- ====================================================================
+         VIEW -1: NETFLIX / PRIME VIDEO LOGIN (Autenticação Inicial Obrigatória)
+         ==================================================================== -->
+    <main id="authView" class="auth-screen sf-login-screen">
+      <!-- 1. LEFT: 3D Poster Collage Wall with Dark Gradient Overlay -->
+      <div class="sf-login-poster-wall" aria-hidden="true">
+        <div class="sf-poster-grid-tilt">
+          <!-- Coluna 1 -->
+          <div class="sf-poster-col">
+            <div class="sf-poster-card" style="background-image:url('https://image.tmdb.org/t/p/w500/1XDDXPXGiI8id7MrUxK36ke7gkX.jpg');"></div>
+            <div class="sf-poster-card sf-brand-card netflix-card">
+              <span class="sf-brand-n">N</span>
+            </div>
+            <div class="sf-poster-card" style="background-image:url('https://image.tmdb.org/t/p/w500/u3bZgnGQ9T01sWNhyveQz0wH0Hl.jpg');"></div>
+            <div class="sf-poster-card" style="background-image:url('https://images.unsplash.com/photo-1508098682722-e99c43a406b2?w=500');"></div>
+            <div class="sf-poster-card" style="background-image:url('https://image.tmdb.org/t/p/w500/8b8R8l88Qje9dn9OE8PY05Nxl1X.jpg');"></div>
+          </div>
+          <!-- Coluna 2 -->
+          <div class="sf-poster-col sf-col-offset">
+            <div class="sf-poster-card" style="background-image:url('https://image.tmdb.org/t/p/w500/49WJfeN0moxb9IPfGn8AIqMGskD.jpg');"></div>
+            <div class="sf-poster-card" style="background-image:url('https://image.tmdb.org/t/p/w500/reKs8y4mPwXgYsZM2usYW9I8Ka4.jpg');"></div>
+            <div class="sf-poster-card sf-brand-card prime-card">
+              <span class="sf-brand-prime">prime video</span>
+            </div>
+            <div class="sf-poster-card" style="background-image:url('https://image.tmdb.org/t/p/w500/1E5baAaEse26fej7uHcjOgEE2t2.jpg');"></div>
+            <div class="sf-poster-card" style="background-image:url('https://image.tmdb.org/t/p/w500/d5iIlFn5s0ImszYzBPb8JPIfbXD.jpg');"></div>
+          </div>
+          <!-- Coluna 3 -->
+          <div class="sf-poster-col">
+            <div class="sf-poster-card" style="background-image:url('https://image.tmdb.org/t/p/w500/8Gxv8gSFCU0XGDykEGv7zR1n2ua.jpg');"></div>
+            <div class="sf-poster-card" style="background-image:url('https://image.tmdb.org/t/p/w500/62HCnUTziyWcpDaBO2i1DX17ljH.jpg');"></div>
+            <div class="sf-poster-card" style="background-image:url('https://image.tmdb.org/t/p/w500/27A8iq3F8Y9vC05V8n9j21V3Z7k.jpg');"></div>
+            <div class="sf-poster-card" style="background-image:url('https://image.tmdb.org/t/p/w500/mxlW7V8Yd2H9bH6xRj288eJ8uWf.jpg');"></div>
+          </div>
+        </div>
+        <div class="sf-poster-wall-gradient"></div>
+      </div>
+
+      <!-- 2. TOP RIGHT: Digital Clock and Date -->
+      <div class="sf-login-top-clock">
+        <div class="sf-clock-time" id="streamflixLoginClock">21:45</div>
+        <div class="sf-clock-date" id="streamflixLoginDate">Seg, 26 de Mai</div>
+      </div>
+
+      <!-- 3. CENTER: Streamflix Brand + Form + Partners -->
+      <div class="sf-login-center-wrapper">
+        <!-- Logo & Header -->
+        <div class="sf-brand-header">
+          <div class="sf-brand-row">
+            <div class="sf-play-badge">
+              <svg viewBox="0 0 24 24" width="30" height="30" fill="none">
+                <polygon points="6 4 20 12 6 20 6 4" fill="#FF1E27" stroke="#FF1E27" stroke-width="2" stroke-linejoin="round"/>
+              </svg>
+            </div>
+            <h1 class="sf-main-brand-title">Stream<span class="sf-red-text">flix</span></h1>
+          </div>
+          <p class="sf-brand-tagline">O melhor do entretenimento, em um só lugar.</p>
+          
+          <div class="sf-cat-chips-row">
+            <span class="sf-chip"><span class="chip-ico">🎬</span> Filmes</span>
+            <span class="sf-chip"><span class="chip-ico">📺</span> Séries</span>
+            <span class="sf-chip"><span class="chip-ico">📡</span> Canais de TV</span>
+            <span class="sf-chip"><span class="chip-ico">⚽</span> Esportes</span>
+            <span class="sf-chip"><span class="chip-ico">🎮</span> Infantil</span>
+            <span class="sf-chip"><span class="chip-ico">➕</span> E muito mais!</span>
+          </div>
+        </div>
+
+        <!-- Glassmorphic Login Card -->
+        <div class="sf-login-glass-card">
+          <!-- TOP NAVIGATION TABS (Navegáveis pelas setinhas da TV e Mouse) -->
+          <div class="sf-auth-mode-tabs" role="tablist">
+            <button type="button" id="tabBtnLogin" class="sf-auth-tab active" role="tab" aria-selected="true" tabindex="0">
+              <span>🔑 Entrar</span>
+            </button>
+            <button type="button" id="tabBtnRegister" class="sf-auth-tab" role="tab" aria-selected="false" tabindex="0">
+              <span>✨ Criar Conta</span>
+            </button>
+            <button type="button" id="tabBtnMobile" class="sf-auth-tab" role="tab" aria-selected="false" tabindex="0">
+              <span>📱 Código PIN</span>
+            </button>
+          </div>
+
+          <!-- MAIN LOGIN VIEW -->
+          <div id="boxMainLoginContainer">
+            <div class="sf-card-head">
+              <h2 class="sf-card-title">Entrar na sua conta</h2>
+              <p class="sf-card-subtitle">Acesse todo o conteúdo do Streamflix</p>
+            </div>
+
+            <form id="authLoginForm" class="sf-form-body">
+              <!-- E-mail input with user icon -->
+              <div class="sf-field-group">
+                <div class="sf-field-icon">
+                  <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                </div>
+                <input type="text" id="inputLoginEmail" class="sf-field-input" placeholder="E-mail ou usuário" required autocomplete="username" autocapitalize="off" autocorrect="off" spellcheck="false" tabindex="0">
+              </div>
+
+              <!-- Password input with lock and eye toggle -->
+              <div class="sf-field-group">
+                <div class="sf-field-icon">
+                  <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                </div>
+                <input type="password" id="inputLoginPassword" class="sf-field-input" placeholder="Senha" required autocomplete="current-password" autocapitalize="off" autocorrect="off" spellcheck="false" tabindex="0">
+                <button type="button" id="btnTogglePasswordVisibility" class="sf-eye-btn" tabindex="0" title="Mostrar/Ocultar Senha">
+                  <svg id="iconEye" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                </button>
+              </div>
+
+              <!-- Remember me & Forgot Password -->
+              <div class="sf-field-options">
+                <label class="sf-chk-container">
+                  <input type="checkbox" id="chkRememberMe" checked>
+                  <span class="sf-chk-custom"></span>
+                  <span class="sf-chk-text">Lembrar de mim</span>
+                </label>
+                <button type="button" class="sf-link-forgot" id="btnForgotPassTv" tabindex="0">Esqueceu sua senha?</button>
+              </div>
+
+              <!-- Primary Red Action Button -->
+              <button type="submit" class="sf-btn-red-action" id="btnLoginSubmit" tabindex="0">
+                <span>Entrar</span>
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+              </button>
+
+              <!-- Botão Principal de Criar Conta (Fácil acesso pelas setinhas da TV) -->
+              <div class="sf-form-footer" style="margin-top: 10px;">
+                <button type="button" id="btnSwitchToRegister" class="sf-btn-create-account-cta" tabindex="0">
+                  <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg>
+                  <span>Não tem uma conta? <strong>Criar Nova Conta</strong></span>
+                </button>
+              </div>
+
+              <!-- Divider -->
+              <div class="sf-or-divider">
+                <span class="divider-line"></span>
+                <span class="divider-text">ou acesse rápido</span>
+                <span class="divider-line"></span>
+              </div>
+
+              <!-- Alternative Social / PIN Buttons -->
+              <div class="sf-alt-buttons-row">
+                <button type="button" class="sf-btn-alt-provider" id="btnQuickDemoLogin" tabindex="0" title="Continuar com Google">
+                  <svg viewBox="0 0 24 24" width="16" height="16"><path fill="#EA4335" d="M12 5c1.6 0 3 .6 4.1 1.6l3.1-3.1C17.3 1.7 14.8 1 12 1 7.5 1 3.7 3.6 1.9 7.3l3.7 2.9C6.5 7.4 9 5 12 5z"/><path fill="#4285F4" d="M23.5 12.3c0-.8-.1-1.6-.2-2.3H12v4.5h6.5c-.3 1.5-1.1 2.8-2.4 3.7l3.7 2.9c2.2-2 3.7-5 3.7-8.8z"/><path fill="#FBBC05" d="M5.6 14.8c-.2-.7-.4-1.5-.4-2.8s.2-2.1.4-2.8L1.9 6.3C.7 8.7 0 10.3 0 12s.7 3.3 1.9 5.7l3.7-2.9z"/><path fill="#34A853" d="M12 23c3.2 0 6-1.1 8-3l-3.7-2.9c-1.1.7-2.5 1.2-4.3 1.2-3 0-5.5-2.4-6.4-5.2L1.9 16C3.7 19.7 7.5 23 12 23z"/></svg>
+                  <span>Continuar com Google</span>
+                </button>
+
+                <button type="button" class="sf-btn-alt-provider" id="btnAppleLogin" tabindex="0" title="Continuar com Apple">
+                  <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M15.97 6.38c.62-.75 1.04-1.8 1.01-2.88-.93.04-2.07.62-2.73 1.39-.58.67-1.09 1.74-1.01 2.81 1.05.08 2.12-.56 2.73-1.32z"/></svg>
+                  <span>Continuar com Apple</span>
+                </button>
+
+                <button type="button" class="sf-btn-alt-provider" id="btnPinMobileLogin" tabindex="0" title="Acessar com Celular / PIN">
+                  <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="15" rx="2" ry="2"/><polyline points="17 2 12 7 7 2"/></svg>
+                  <span>Acessar com PIN</span>
+                </button>
+              </div>
+
+              <!-- Data Privacy Policy Link -->
+              <div class="sf-policy-row">
+                <button type="button" id="btnOpenPrivacyPolicy" class="sf-btn-policy-link" tabindex="0">
+                  <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                  <span>Política de Dados e Privacidade</span>
+                </button>
+              </div>
+            </form>
+          </div>
+
+          <!-- FORGOT PASSWORD SUB-PANEL -->
+          <form id="authForgotForm" class="sf-form-body" style="display:none;">
+            <div class="sf-card-head" style="margin-bottom:16px;">
+              <h2 class="sf-card-title">Recuperar Senha</h2>
+              <p class="sf-card-subtitle">Digite seu e-mail cadastrado para redefinir</p>
+            </div>
+            <div class="sf-field-group">
+              <div class="sf-field-icon">
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+              </div>
+              <input type="email" id="inputForgotEmail" class="sf-field-input" placeholder="seu@email.com" required autocapitalize="off" autocorrect="off" spellcheck="false" tabindex="0">
+            </div>
+            <div id="boxForgotHint" style="display:none; background:rgba(0,112,243,0.15); border:1px solid #0070F3; border-radius:10px; padding:12px; margin-bottom:14px; color:#fff; font-size:0.88rem; line-height:1.45;"></div>
+            <div id="fieldForgotResetPass" style="display:none;">
+              <div class="sf-field-group" style="margin-bottom:10px;">
+                <input type="password" id="inputForgotNewPass" class="sf-field-input" placeholder="Nova Senha" autocapitalize="off" autocorrect="off" spellcheck="false" tabindex="0">
+              </div>
+              <div class="sf-field-group">
+                <input type="password" id="inputForgotNewPassConfirm" class="sf-field-input" placeholder="Confirmar Nova Senha" autocapitalize="off" autocorrect="off" spellcheck="false" tabindex="0">
+              </div>
+            </div>
+            <div style="display:flex; gap:10px; margin-top:8px;">
+              <button type="button" class="sf-btn-alt-provider" id="btnCancelForgot" style="flex:1;" tabindex="0">Voltar</button>
+              <button type="submit" class="sf-btn-red-action" id="btnForgotActionTv" style="flex:1;" tabindex="0">
+                <span id="txtForgotActionTv">Recuperar Senha</span>
+              </button>
+            </div>
+          </form>
+
+          <!-- REGISTER ACCOUNT SUB-PANEL -->
+          <form id="authRegisterForm" class="sf-form-body" style="display:none;">
+            <div class="sf-card-head" style="margin-bottom:16px;">
+              <h2 class="sf-card-title">Criar Conta Streamflix</h2>
+              <p class="sf-card-subtitle">Cadastre seu acesso exclusivo em 10 segundos</p>
+            </div>
+            <div class="sf-field-group">
+              <div class="sf-field-icon">
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+              </div>
+              <input type="email" id="inputRegEmail" class="sf-field-input" placeholder="Seu E-mail" required autocomplete="username" autocapitalize="off" autocorrect="off" spellcheck="false" tabindex="0">
+            </div>
+            <div class="sf-field-group">
+              <div class="sf-field-icon">
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+              </div>
+              <input type="password" id="inputRegPassword" class="sf-field-input" placeholder="Senha (Mínimo 4 caracteres)" required autocomplete="new-password" autocapitalize="off" autocorrect="off" spellcheck="false" tabindex="0">
+            </div>
+            <div class="sf-field-group">
+              <div class="sf-field-icon">
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+              </div>
+              <input type="text" id="inputRegPlaylist" class="sf-field-input" placeholder="Link de Reprodução (Lista M3U ou Xtream)" required autocapitalize="off" autocorrect="off" spellcheck="false" tabindex="0">
+            </div>
+            <p style="font-size:0.75rem; color:#8fa0b5; margin:-4px 0 10px 4px; text-align:left; line-height:1.4;">
+              * Cada conta possui sua própria lista isolada. A lista Master oficial é privada.
+            </p>
+            <div style="display:flex; gap:10px; margin-top:4px;">
+              <button type="button" class="sf-btn-alt-provider" id="btnCancelRegister" style="flex:1;" tabindex="0">Voltar</button>
+              <button type="submit" class="sf-btn-red-action" id="btnRegisterSubmit" style="flex:1.5;" tabindex="0">
+                <span>Criar Conta</span>
+              </button>
+            </div>
+            <div class="sf-policy-row" style="margin-top:10px;">
+              <button type="button" id="btnOpenPrivacyPolicyReg" class="sf-btn-policy-link" tabindex="0">
+                <span>🛡️ Política de Proteção de Dados</span>
+              </button>
+            </div>
+          </form>
+
+          <!-- MOBILE QR CODE / PIN PAIRING SUB-PANEL -->
+          <div id="authMobileForm" class="sf-form-body sf-mobile-pair-panel" style="display:none;">
+            <div class="sf-card-head" style="margin-bottom:12px;">
+              <span class="sf-mobile-tag">ACESSO RÁPIDO</span>
+              <h2 class="sf-card-title">Acesse com o Celular</h2>
+              <p class="sf-card-subtitle">Sem precisar digitar senha no controle remoto</p>
+            </div>
+            <div class="mobile-pair-container">
+              <div class="qr-code-frame" id="qrCodeFrame">
+                <img id="qrCodeImg" alt="QR Code de Pareamento" class="qr-code-img" />
+                <div id="qrLoadingOverlay" class="qr-loading-overlay">
+                  <div class="net-spinner"></div>
+                  <span>Gerando QR Code...</span>
+                </div>
+              </div>
+              <div class="mobile-pair-instructions">
+                <div class="instruction-step">
+                  <span class="step-num">1</span>
+                  <div class="step-info">
+                    <strong>Aponte a câmera</strong>
+                    <span>Escaneie o QR Code ao lado pelo celular</span>
+                  </div>
+                </div>
+                <div class="instruction-divider">OU NO NAVEGADOR</div>
+                <div class="instruction-step">
+                  <span class="step-num">2</span>
+                  <div class="step-info">
+                    <span id="lblMobileUrl" class="mobile-url-link">http://.../login-celular</span>
+                    <span>Digite o código de 6 dígitos:</span>
+                  </div>
+                </div>
+                <div class="mobile-pair-code-display" id="txtMobilePairCode">------</div>
+              </div>
+            </div>
+            <div class="mobile-status-container">
+              <div class="pulse-indicator-dot"></div>
+              <span id="txtMobilePairStatus">Aguardando confirmação no celular...</span>
+            </div>
+            <div style="display:flex; gap:10px; margin-top:10px;">
+              <button type="button" class="sf-btn-alt-provider" id="btnCancelMobilePair" style="flex:1;" tabindex="0">Voltar ao Login</button>
+              <button type="button" class="sf-btn-red-action" id="btnRefreshPairCode" style="flex:1.3;" tabindex="0">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 4v6h-6M1 20v-6h6"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+                <span>Novo Código</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Alert notification -->
+          <div id="authStatusAlert" class="auth-alert" style="display:none;"></div>
+        </div>
+
+        <!-- 4. BOTTOM PARTNERS ROW: prime video, NETFLIX, Disney+, HBO, max, E muito mais... -->
+        <div class="sf-partners-footer">
+          <span class="sf-partner-logo prime-txt">prime video</span>
+          <span class="sf-partner-logo netflix-txt">NETFLIX</span>
+          <span class="sf-partner-logo disney-txt">Disney+</span>
+          <span class="sf-partner-logo hbo-txt">HBO</span>
+          <span class="sf-partner-logo max-txt">max</span>
+          <span class="sf-partner-logo more-txt">E muito mais...</span>
+        </div>
+      </div>
+
+      <!-- 5. RIGHT: Value Proposition Column -->
+      <div class="sf-login-right-features">
+        <div class="sf-features-header">
+          <h2 class="sf-feat-title-white">Tudo o que você ama,</h2>
+          <h2 class="sf-feat-title-red">em um só lugar.</h2>
+        </div>
+
+        <div class="sf-features-list">
+          <div class="sf-feature-item">
+            <div class="sf-feat-circle">
+              <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="#FF1E27" stroke-width="2"><rect x="2" y="2" width="20" height="20" rx="2.18" ry="2.18"/><line x1="7" y1="2" x2="7" y2="22"/><line x1="17" y1="2" x2="17" y2="22"/><line x1="2" y1="12" x2="22" y2="12"/><line x1="2" y1="7" x2="7" y2="7"/><line x1="2" y1="17" x2="7" y2="17"/><line x1="17" y1="17" x2="22" y2="17"/><line x1="17" y1="7" x2="22" y2="7"/></svg>
+            </div>
+            <div class="sf-feat-desc">
+              <strong>Filmes e Séries</strong>
+              <span>Lançamentos, clássicos e os maiores sucessos.</span>
+            </div>
+          </div>
+
+          <div class="sf-feature-item">
+            <div class="sf-feat-circle">
+              <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="#FF1E27" stroke-width="2"><rect x="2" y="7" width="20" height="15" rx="2" ry="2"/><polyline points="17 2 12 7 7 2"/></svg>
+            </div>
+            <div class="sf-feat-desc">
+              <strong>Canais de TV</strong>
+              <span>Nacionais e internacionais, 24h por dia.</span>
+            </div>
+          </div>
+
+          <div class="sf-feature-item">
+            <div class="sf-feat-circle">
+              <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="#FF1E27" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/></svg>
+            </div>
+            <div class="sf-feat-desc">
+              <strong>Esportes</strong>
+              <span>Futebol, MMA, F1, NBA e muito mais.</span>
+            </div>
+          </div>
+
+          <div class="sf-feature-item">
+            <div class="sf-feat-circle">
+              <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="#FF1E27" stroke-width="2"><circle cx="12" cy="12" r="10"/><circle cx="9" cy="9" r="1" fill="#FF1E27"/><circle cx="15" cy="9" r="1" fill="#FF1E27"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/></svg>
+            </div>
+            <div class="sf-feat-desc">
+              <strong>Infantil</strong>
+              <span>Diversão garantida para toda a família.</span>
+            </div>
+          </div>
+
+          <div class="sf-feature-item">
+            <div class="sf-feat-circle">
+              <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="#FF1E27" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+            </div>
+            <div class="sf-feat-desc">
+              <strong>Canais Premium</strong>
+              <span>HBO, Disney+, Paramount+, Star+, Max e muito mais.</span>
+            </div>
+          </div>
+
+          <div class="sf-feature-item">
+            <div class="sf-feat-circle">
+              <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="#FF1E27" stroke-width="2"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>
+            </div>
+            <div class="sf-feat-desc">
+              <strong>Em todos os seus dispositivos</strong>
+              <span>TV, celular, tablet e computador.</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="sf-features-footer">
+          <div class="sf-bottom-logo-badge">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="#FF1E27"><polygon points="6 4 20 12 6 20 6 4"/></svg>
+            <span class="sf-bottom-logo-text">Stream<span style="color:#FF1E27;">flix</span></span>
+          </div>
+          <p class="sf-bottom-promo-quote">Mais que um streaming, uma experiência completa.</p>
+        </div>
+      </div>
+
+      <!-- Hidden compatibility anchors for existing JS event handlers -->
+      <div style="display:none !important;">
+        <button id="btnAuthGuestMode"></button>
+        <span id="txtCurrentServerHost"></span>
+        <button id="btnChangeServerHost"></button>
+      </div>
+    </main>
+
+    <!-- ====================================================================
+         MODAL DE POLÍTICA DE DADOS E PRIVACIDADE (LGPD & ISOLAMENTO)
+         ==================================================================== -->
+    <div id="modalDataPrivacy" class="sf-modal-overlay" style="display:none;" role="dialog" aria-modal="true" aria-labelledby="txtPrivacyTitle">
+      <div class="sf-modal-privacy-card">
+        <div class="sf-modal-privacy-header">
+          <div class="sf-privacy-icon-badge">
+            <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="#00D2FF" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+          </div>
+          <div style="flex:1;">
+            <h2 class="sf-privacy-title" id="txtPrivacyTitle">Política de Proteção de Dados e Privacidade</h2>
+            <p class="sf-privacy-subtitle">STREAMFLIX Cinema &bull; Segurança, Isolamento e Autenticação</p>
+          </div>
+        </div>
+
+        <div class="sf-modal-privacy-body">
+          <div class="sf-privacy-section">
+            <div class="sf-privacy-sec-icon">🔐</div>
+            <div class="sf-privacy-sec-text">
+              <h3>1. Autenticação Criptográfica Segura (SHA-256)</h3>
+              <p>Suas credenciais são protegidas por algoritmo de hash criptográfico unidirecional SHA-256 de 256 bits. O sistema nunca visualiza, armazena ou transmite sua senha em texto puro.</p>
+            </div>
+          </div>
+
+          <div class="sf-privacy-section">
+            <div class="sf-privacy-sec-icon">📺</div>
+            <div class="sf-privacy-sec-text">
+              <h3>2. Isolamento Total de Listas IPTV (Propriedade Privada)</h3>
+              <p>Cada conta cadastrada possui isolamento estrito de catálogo e sincronização segura na nuvem. Ao criar sua conta, informe o seu link de reprodução (M3U ou Xtream) para carregar automaticamente seus canais, filmes e séries em todos os seus dispositivos.</p>
+            </div>
+          </div>
+
+          <div class="sf-privacy-section">
+            <div class="sf-privacy-sec-icon">💾</div>
+            <div class="sf-privacy-sec-text">
+              <h3>3. Banco de Dados Persistente e Conexão Multi-TV</h3>
+              <p>Seus logins, códigos de conta, perfis e histórico são salvos em banco de dados dedicado com persistência permanente, garantindo que seu usuário exista e funcione em qualquer Smart TV, celular ou computador sem perder dados.</p>
+            </div>
+          </div>
+
+          <div class="sf-privacy-section">
+            <div class="sf-privacy-sec-icon">👥</div>
+            <div class="sf-privacy-sec-text">
+              <h3>4. Perfis de Usuário e Continuar Assistindo</h3>
+              <p>Crie perfis personalizados (Principal, Infantil, VIP) com avatares e acompanhamento automático de episódios e filmes de onde você parou.</p>
+            </div>
+          </div>
+
+          <div class="sf-privacy-section">
+            <div class="sf-privacy-sec-icon">🛡️</div>
+            <div class="sf-privacy-sec-text">
+              <h3>5. Conformidade com a LGPD</h3>
+              <p>Seus dados são estritamente confidenciais e nunca são comercializados ou compartilhados com terceiros.</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="sf-modal-privacy-footer">
+          <button type="button" id="btnClosePrivacyPolicy" class="sf-btn-red-action" tabindex="0" style="width:100%; max-width:320px; justify-content:center;">
+            <span>Entendido e Fechar</span>
+          </button>
+        </div>
+      </div>
     </div>
 
-    <div id="mainFormView">
-      <div class="tv-detected-pill" id="tvStatusPill">
-        <div class="tv-detected-dot"></div>
-        <span id="tvStatusText">Smart TV Conectada</span>
-      </div>
-
-      <h1>Conectar & Gerenciar</h1>
-      <p class="subtitle">Faça login, recupere senhas ou crie novos perfis diretamente pelo celular para sua Smart TV.</p>
-
-      <div class="code-input-wrap">
-        <label for="inputPairCode" class="code-label">Código de Pareamento da TV</label>
-        <input type="text" id="inputPairCode" class="code-input" maxlength="6" placeholder="000000" required>
-      </div>
-
-      <!-- Navigation Tabs: Login vs Register vs Profiles -->
-      <div class="auth-tabs-row">
-        <button type="button" class="auth-tab-btn active" id="tabBtnLogin" onclick="switchAuthTab('login')">
-          Entrar
-        </button>
-        <button type="button" class="auth-tab-btn" id="tabBtnRegister" onclick="switchAuthTab('register')">
-          Criar Conta
-        </button>
-        <button type="button" class="auth-tab-btn" id="tabBtnProfiles" onclick="switchAuthTab('profiles')">
-          Perfis 👤
-        </button>
-      </div>
-
-      <!-- Form 1: Login Tab -->
-      <form id="formLoginTab" onsubmit="handleLoginSubmit(event)">
-        <div class="form-group">
-          <label for="loginEmail">E-mail</label>
-          <input type="email" id="loginEmail" placeholder="seu@email.com" autocomplete="username" required>
-        </div>
-        <div class="form-group">
-          <label for="loginPassword">Senha</label>
-          <input type="password" id="loginPassword" placeholder="••••••••" autocomplete="current-password" required>
-        </div>
-        <div style="display:flex; justify-content:flex-end; margin-top:-6px; margin-bottom:14px;">
-          <a href="#" onclick="openForgotTab(event)" style="color:#00D2FF; font-size:0.85rem; text-decoration:none; font-weight:600;">Esqueceu a senha?</a>
-        </div>
-        <button type="submit" class="btn-submit-main" id="btnLoginSubmit">
-          <span>ENTRAR NA SMART TV 🚀</span>
-        </button>
-      </form>
-
-      <!-- Form 2: Register Tab -->
-      <form id="formRegisterTab" style="display:none;" onsubmit="handleRegisterSubmit(event)">
-        <div class="form-group">
-          <label for="regEmail">E-mail da Conta</label>
-          <input type="email" id="regEmail" placeholder="seu@email.com" autocomplete="username" required>
-        </div>
-        <div class="form-group">
-          <label for="regPassword">Criar Senha</label>
-          <input type="password" id="regPassword" placeholder="Mínimo 6 caracteres" autocomplete="new-password" required minlength="6">
-        </div>
-        <div class="form-group">
-          <label for="regPasswordConfirm">Confirmar Senha</label>
-          <input type="password" id="regPasswordConfirm" placeholder="Repita a senha" autocomplete="new-password" required minlength="6">
-        </div>
-        <div class="form-group">
-          <label for="regPlaylist">Link da Lista M3U / Xtream Própria</label>
-          <input type="text" id="regPlaylist" placeholder="http://servidor.com:8080/get.php?username=..." required>
-          <p class="field-hint">Insira o link oficial da sua lista. Novos usuários precisam vincular sua lista própria para gerar o catálogo.</p>
-        </div>
-        <button type="submit" class="btn-submit-main" id="btnRegisterSubmit">
-          <span>CRIAR CONTA E CONECTAR TV ✨</span>
-        </button>
-      </form>
-
-      <!-- Form 3: Forgot Password Tab -->
-      <form id="formForgotTab" style="display:none;" onsubmit="handleForgotSubmit(event)">
-        <div class="form-group">
-          <label for="forgotEmail">E-mail Cadastrado</label>
-          <input type="email" id="forgotEmail" placeholder="seu@email.com" autocomplete="username" required>
-        </div>
-        <div id="forgotStep2" style="display:none;">
-          <div class="form-group">
-            <label for="forgotNewPass">Nova Senha</label>
-            <input type="password" id="forgotNewPass" placeholder="Mínimo 6 caracteres" minlength="6">
+    <!-- ====================================================================
+         VIEW 0: NETFLIX PROFILE SELECTION (Quem está assistindo?)
+         ==================================================================== -->
+    <main id="profileSelectView" class="profile-select-screen" style="display:none;">
+      <div class="profile-select-container">
+        <div class="profile-select-header">
+          <div class="samsung-brand-logo app-brand-logo" style="margin-bottom:24px; justify-content:center;">
+            <img src="icon.png" class="brand-img-icon lg" alt="STREAMFLIX" />
+            <div class="samsung-brand-text">
+              <div style="display:flex; align-items:center; gap:6px;">
+                <span class="samsung-word" style="font-size:1.45rem; letter-spacing:1px;">STREAM<span class="tvplus-word" style="color:#FF1357;">FLIX</span></span>
+                <span class="brand-badge-pro">CINEMA 4K</span>
+              </div>
+              <span class="samsung-smart-hub-tag" style="margin-left:0; margin-top:3px; font-size:0.58rem; width:fit-content; background:linear-gradient(135deg, #FF1357, #7928CA);">SAMSUNG TV &bull; BTV</span>
+            </div>
           </div>
-          <div class="form-group">
-            <label for="forgotNewPassConfirm">Confirmar Nova Senha</label>
-            <input type="password" id="forgotNewPassConfirm" placeholder="Repita a nova senha" minlength="6">
+          <h1 class="profile-select-title">Quem está assistindo?</h1>
+          <p class="profile-select-subtitle">Escolha o seu perfil para continuar de onde parou ou crie um novo</p>
+        </div>
+
+        <div class="profiles-grid" id="profilesGrid">
+          <!-- Populated by JS -->
+        </div>
+
+        <div class="profile-select-actions">
+          <button class="btn-profile-action primary" id="btnAddProfileBtn">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            <span>Adicionar Perfil</span>
+          </button>
+          <button class="btn-profile-action secondary" id="btnManageProfilesBtn">
+            <span>Gerenciar Perfis</span>
+          </button>
+          <button class="btn-profile-action sync" id="btnOpenSyncConfigBtn" title="Código de Sincronização entre PC, Celular e TV">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/></svg>
+            <span id="syncAccountCodeBadge">Conta: PADRAO</span>
+          </button>
+          <button class="btn-profile-action logout" id="btnAuthLogoutFromProfiles" title="Sair desta conta">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></svg>
+            <span>Sair</span>
+          </button>
+        </div>
+      </div>
+    </main>
+
+    <!-- ====================================================================
+         VIEW: NETFLIX BROWSE & HOME SYSTEM (PC & SMART TV)
+         ==================================================================== -->
+    <main id="netflixHomeView" class="netflix-browse-screen" style="display:none;">
+      
+      <!-- Streamflix Fixed Glass Sidebar (Mockup Spec) -->
+      <aside class="netflix-sidebar streamflix-sidebar" id="netflixSidebar">
+        <div class="streamflix-brand-header" id="netSidebarLogoBtn" title="Streamflix">
+          <div class="streamflix-brand-logo-wrap">
+            <svg viewBox="0 0 24 24" width="26" height="26" class="streamflix-logo-svg" fill="#E50914">
+              <path d="M5 3l15 9-15 9V3z"/>
+            </svg>
+          </div>
+          <span class="streamflix-brand-title">Streamflix</span>
+        </div>
+
+        <nav class="net-sidebar-nav streamflix-nav">
+          <button class="net-sidebar-item active" id="netNavHome" data-nav="home" tabindex="0">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
+            <span class="net-item-label">Início</span>
+          </button>
+          <button class="net-sidebar-item" id="netNavMovies" data-nav="movies" tabindex="0">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="20" rx="2.18"/><line x1="7" y1="2" x2="7" y2="22"/><line x1="17" y1="2" x2="17" y2="22"/><line x1="2" y1="12" x2="22" y2="12"/><line x1="2" y1="7" x2="7" y2="7"/><line x1="2" y1="17" x2="7" y2="17"/><line x1="17" y1="7" x2="22" y2="7"/><line x1="17" y1="17" x2="22" y2="17"/></svg>
+            <span class="net-item-label">Filmes</span>
+          </button>
+          <button class="net-sidebar-item" id="netNavSeries" data-nav="series" tabindex="0">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="15" rx="2.5"/><polyline points="17 2 12 7 7 2"/></svg>
+            <span class="net-item-label">Séries</span>
+          </button>
+          <button class="net-sidebar-item" id="netNavReleases" data-nav="releases" tabindex="0">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/><circle cx="12" cy="12" r="3" fill="currentColor"/></svg>
+            <span class="net-item-label">Lançamentos</span>
+          </button>
+          <button class="net-sidebar-item" id="netNavAnimes" data-nav="animes" tabindex="0">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5c-5 0-8 3.5-8 8 0 4 3 7 8 7s8-3 8-7c0-4.5-3-8-8-8z"/><path d="M4 10l-2-6 7 3M20 10l2-6-7 3"/><circle cx="9" cy="13" r="1" fill="currentColor"/><circle cx="15" cy="13" r="1" fill="currentColor"/><path d="M10 16c1 .6 3 .6 4 0"/></svg>
+            <span class="net-item-label">Animes</span>
+          </button>
+          <button class="net-sidebar-item" id="netNavLive" data-nav="live" tabindex="0">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2"/><polyline points="8 2 12 7 16 2"/></svg>
+            <span class="net-item-label">Canais de TV</span>
+          </button>
+          <button class="net-sidebar-item" id="netNavSports" data-nav="sports" tabindex="0">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20M2 12a14.5 14.5 0 0 0 20 0M4.93 4.93l14.14 14.14M19.07 4.93L4.93 19.07"/></svg>
+            <span class="net-item-label">Esportes</span>
+          </button>
+          <button class="net-sidebar-item" id="netNavKids" data-nav="kids" tabindex="0">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>
+            <span class="net-item-label">Infantil</span>
+          </button>
+          <button class="net-sidebar-item" id="netNavFavorites" data-nav="favorites" tabindex="0">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 5v14M5 12h14"/></svg>
+            <span class="net-item-label">Minha Lista</span>
+          </button>
+        </nav>
+
+        <div class="streamflix-sidebar-bottom">
+          <button class="net-sidebar-item streamflix-search-btn" id="netNavSearch" data-nav="search" tabindex="0">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <span class="net-item-label">Pesquisar</span>
+          </button>
+          
+          <div class="streamflix-sidebar-user-row">
+            <button class="streamflix-user-pill-btn" id="netNavProfiles" data-nav="profiles" tabindex="0" title="Quem está assistindo? (Trocar Perfil)">
+              <div class="net-sidebar-avatar" id="netSidebarAvatar">👤</div>
+              <span class="streamflix-user-lbl" id="netSidebarProfileName">Perfil</span>
+            </button>
+            <button class="streamflix-logout-mini-btn" id="netNavLogout" data-nav="logout" tabindex="0" title="Sair da Conta">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></svg>
+            </button>
           </div>
         </div>
-        <div id="forgotSuccessHint" style="display:none; background:rgba(0,210,255,0.15); border:1px solid #00D2FF; border-radius:12px; padding:14px; margin-bottom:16px; color:#fff; font-size:0.9rem; line-height:1.5;"></div>
-        <div style="display:flex; gap:10px;">
-          <button type="button" class="btn-submit-main" style="background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.2); color:#cbd5e1; flex:1;" onclick="switchAuthTab('login')">
+      </aside>
+
+      <!-- Main Content Area -->
+      <div class="netflix-content-scroll" id="netflixContentScroll">
+
+        <!-- Streamflix Top Navigation Bar (Mockup Spec) -->
+        <header class="netflix-top-bar streamflix-top-bar" id="netflixTopBar">
+          <div class="streamflix-top-left"></div>
+
+          <div class="streamflix-top-right">
+            <!-- Search Button Trigger -->
+            <button class="streamflix-header-icon-btn" id="netTopSearchBtn" data-nav="search" title="Buscar">
+              <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            </button>
+
+            <!-- Notifications Button -->
+            <button class="streamflix-header-icon-btn" id="netTopNotificationsBtn" title="Notificações">
+              <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+            </button>
+
+            <!-- Wi-Fi Status Indicator -->
+            <div class="streamflix-header-icon-btn wifi-indicator" id="netTopWifiBtn" title="Wi-Fi Conectado">
+              <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12.55a11 11 0 0 1 14.08 0"/><path d="M1.42 9a16 16 0 0 1 21.16 0"/><path d="M8.53 16.11a6 6 0 0 1 6.95 0"/><line x1="12" y1="20" x2="12.01" y2="20" stroke-width="3"/></svg>
+            </div>
+
+            <!-- Profile Switcher Button in Header -->
+            <button class="streamflix-header-profile-btn" id="netProfileTrigger" data-nav="profiles" title="Quem está assistindo? (Trocar Perfil)" tabindex="0">
+              <div id="netTopAvatar">👤</div>
+              <span id="netTopProfileName">Perfil</span>
+            </button>
+
+            <!-- Digital Clock (Mockup: 21:45) -->
+            <div class="streamflix-digital-clock" id="samsungTopClock">21:45</div>
+
+            <!-- Compatibility Bridges for legacy selectors -->
+            <div id="netSearchBox" style="display:none;"><input type="text" id="netSearchInput" placeholder="Buscar..."><button id="netClearSearch"></button></div>
+            <div id="btnDataSaverBadge" style="display:none;"><span id="lblDataSaver"></span></div>
+            <div id="btnHotspotBadge" style="display:none;"><span id="lblHotspot"></span></div>
+            <div id="btnGamepadBadge" style="display:none;"><span id="lblGamepadStatus"></span></div>
+            <div id="btnSyncCodeBadge" style="display:none;"><span id="netAccountCodeLabel"></span></div>
+            <div id="netBrandLogo" style="display:none;"></div>
+            <div class="net-nav-links" style="display:none;"></div>
+          </div>
+        </header>
+
+        <!-- No Playlist Warning Banner -->
+        <section class="net-banner-warning" id="netNoPlaylistBanner" style="display:none;">
+          <div class="net-banner-box">
+            <span>📺 Nenhuma lista de canais conectada nesta conta.</span>
+            <button class="btn-net-banner" id="btnOpenConnectListModal">Conectar Lista M3U / Xtream</button>
+          </div>
+        </section>
+
+        <!-- Dynamic View: Home Rows View -->
+        <section id="netHomeContainer" class="net-home-container">
+
+          <!-- Giant Hero Billboard -->
+          <div class="netflix-billboard" id="netflixBillboard">
+            <div class="billboard-backdrop-wrap">
+              <img id="netHeroBackdropImg" class="billboard-backdrop-img" alt="">
+              <div class="billboard-vignette-bottom"></div>
+              <div class="billboard-vignette-left"></div>
+            </div>
+
+            <div class="billboard-info">
+              <div class="billboard-genre-tag" id="netHeroGenreTag">SÉRIES • AÇÃO • AVENTURA</div>
+              <h1 class="billboard-title" id="netHeroTitle">STREAMFLIX</h1>
+              <p class="billboard-synopsis" id="netHeroSynopsis">Explore seus filmes, séries e canais ao vivo carregados diretamente do seu link de reprodução.</p>
+
+              <div class="billboard-actions">
+                <button class="btn-hero-play-white" id="btnNetHeroPlay" tabindex="0">
+                  <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M6 4l14 8-14 8V4z"/></svg>
+                  <span id="lblHeroPlay">Assistir</span>
+                </button>
+                <button class="btn-hero-fav-glass" id="btnNetHeroFav" tabindex="0" title="Adicionar à Minha Lista">
+                  <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
+                  <span id="lblHeroFav">Minha Lista</span>
+                </button>
+              </div>
+
+              <!-- Carousel Indicators (Mockup Pill + Dots) -->
+              <div class="billboard-carousel-dots" id="billboardCarouselDots">
+                <span class="dot-pill active"></span>
+                <span class="dot-circle"></span>
+                <span class="dot-circle"></span>
+                <span class="dot-circle"></span>
+                <span class="dot-circle"></span>
+              </div>
+
+              <!-- Legacy metadata holders for backwards-compatibility -->
+              <div style="display:none;">
+                <span id="netHeroTopBadge"></span>
+                <span id="netHeroRating"></span>
+                <span id="netHeroYear"></span>
+                <span id="netHeroQuality"></span>
+                <span id="netHeroAge"></span>
+                <button id="btnNetHeroInfo"></button>
+                <button id="btnNetHeroTrailer"></button>
+                <button id="btnNetHeroDownload"></button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Dynamic Netflix Horizontal Carousels Container -->
+          <div class="netflix-rows-container" id="netflixRowsContainer">
+            <!-- Dynamic Rows populated by JS:
+                 1. Continuar Assistindo (Wide 16:9 cards with red progress bar)
+                 2. Em Alta na Netflix
+                 3. Séries Populares
+                 4. Filmes de Sucesso
+                 5. Canais de TV ao Vivo
+                 6. Downloads (Assistir Offline)
+            -->
+          </div>
+
+        </section>
+
+        <!-- Dynamic View: Category Catalog Grid (for Séries, Filmes, TV ao Vivo, Minha Lista, Busca) -->
+        <section id="netCatalogContainer" class="net-catalog-container" style="display:none;">
+          <div class="net-catalog-header">
+            <h2 class="net-catalog-title" id="netCatalogTitle">Catálogo</h2>
+            <div class="net-category-chips" id="netCategoryChips">
+              <!-- Category filter buttons -->
+            </div>
+          </div>
+
+          <div class="net-catalog-grid" id="netCatalogGrid">
+            <!-- Dynamic 2:3 posters or 16:9 channel cards -->
+          </div>
+
+          <div class="net-catalog-empty" id="netCatalogEmpty" style="display:none;">
+            Nenhum conteúdo encontrado.
+          </div>
+          <div class="net-catalog-loading" id="netCatalogLoading" style="display:none;">
+            <div class="net-spinner"></div>
+            <span>Carregando títulos...</span>
+          </div>
+        </section>
+
+        <!-- Dynamic View: Downloads Manager Section (Assistir Offline) -->
+        <section id="netDownloadsContainer" class="net-downloads-container" style="display:none;">
+          <div class="net-downloads-header">
+            <div>
+              <h2 class="net-catalog-title">Downloads & Assistir Offline</h2>
+              <p class="net-downloads-subtitle">Assista a seus filmes e episódios baixados a qualquer momento, mesmo sem nenhuma conexão com a internet.</p>
+            </div>
+            <div class="downloads-storage-badge" id="downloadsStorageBadge">
+              Armazenamento: Local
+            </div>
+          </div>
+
+          <div class="downloads-list-grid" id="netDownloadsGrid">
+            <!-- Populated by JS -->
+          </div>
+
+          <div class="downloads-empty-state" id="netDownloadsEmpty" style="display:none;">
+            <svg viewBox="0 0 24 24" width="64" height="64" fill="none" stroke="#555" stroke-width="1.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+            <h3>Nenhum download concluído</h3>
+            <p>Clique no botão "Baixar" em qualquer filme ou episódio para assisti-lo offline.</p>
+          </div>
+        </section>
+
+        <!-- Dynamic View: Live TV (Mockup 3-Column Spec) -->
+        <section id="netEpgContainer" class="net-epg-container streamflix-live-screen" style="display:none;">
+          <div class="streamflix-live-header">
+            <h2 class="streamflix-view-title">TV ao Vivo</h2>
+            <div class="streamflix-live-header-right">
+              <div class="streamflix-digital-clock" id="epgLiveClock">21:45</div>
+            </div>
+          </div>
+
+          <div class="streamflix-live-workspace">
+            <!-- Col 1: Categories -->
+            <div class="streamflix-live-categories" id="streamflixLiveCategories">
+              <button class="live-cat-item active" data-epg-cat="Todos">Canais</button>
+              <button class="live-cat-item" data-epg-cat="esporte">Esportes</button>
+              <button class="live-cat-item" data-epg-cat="filme">Filmes</button>
+              <button class="live-cat-item" data-epg-cat="series">Séries</button>
+              <button class="live-cat-item" data-epg-cat="infantil">Infantil</button>
+              <button class="live-cat-item" data-epg-cat="favoritos">Favoritos</button>
+              <div style="flex:1;"></div>
+              <button class="live-cat-item search" id="btnLiveSearchCat">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                <span>Pesquisar</span>
+              </button>
+            </div>
+
+            <!-- Col 2: Channel List -->
+            <div class="streamflix-live-channellist" id="streamflixLiveChannelList">
+              <!-- Populated dynamically by JS with channel pills (Globo, SBT, Record TV, Band, SporTV, ESPN, TNT, etc.) -->
+            </div>
+
+            <!-- Col 3: Live Player Preview -->
+            <div class="streamflix-live-player-preview" id="streamflixLivePlayerPreview">
+              <div class="live-preview-frame">
+                <img id="livePreviewBackdrop" class="live-preview-img" alt="">
+                <div class="live-red-badge">AO VIVO</div>
+                <div class="live-preview-gradient"></div>
+              </div>
+              <div class="live-preview-info-card">
+                <h3 class="live-preview-ch-name" id="livePreviewChName">Globo</h3>
+                <p class="live-preview-prog-title" id="livePreviewProgTitle">Futebol - Campeonato Brasileiro</p>
+                <div class="live-preview-timeline-row">
+                  <span class="timeline-hour" id="livePreviewStartHour">21:00</span>
+                  <div class="timeline-bar-track">
+                    <div class="timeline-bar-fill" style="width: 45%;"></div>
+                    <div class="timeline-dot" style="left: 45%;"></div>
+                  </div>
+                  <span class="timeline-hour" id="livePreviewEndHour">23:00</span>
+                </div>
+                <button class="btn-live-play-full" id="btnLiveWatchFullscreen" tabindex="0">
+                  <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><polygon points="6 4 19 12 6 20 6 4"/></svg>
+                  <span>Assistir em Tela Cheia</span>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Compatibility container for legacy grid query -->
+          <div id="netEpgCategoryChips" style="display:none;"></div>
+          <div id="netEpgTimelineGrid" style="display:none;"></div>
+          <div id="netEpgEmpty" style="display:none;"></div>
+          <div id="netEpgLoading" style="display:none;"><div class="net-spinner"></div></div>
+          <div id="epgLiveClockBadge" style="display:none;"></div>
+        </section>
+
+        <!-- Dynamic View: Watch History (Histórico de Reprodução) -->
+        <section id="netHistoryContainer" class="net-history-container" style="display:none;">
+          <div class="net-history-header">
+            <div>
+              <h2 class="net-catalog-title">Histórico de Reprodução</h2>
+              <p class="net-history-subtitle">Seus títulos assistidos recentemente sincronizados entre todos os seus dispositivos.</p>
+            </div>
+            <button class="btn-clear-history" id="btnClearHistory" title="Limpar histórico deste perfil">Limpar Histórico</button>
+          </div>
+
+          <div class="history-cards-grid" id="netHistoryGrid">
+            <!-- Populated by JS -->
+          </div>
+
+          <div class="history-empty-state" id="netHistoryEmpty" style="display:none;">
+            <svg viewBox="0 0 24 24" width="64" height="64" fill="none" stroke="#555" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            <h3>Nenhum histórico recente</h3>
+            <p>Os filmes e séries que você começar a assistir aparecerão aqui para continuar facilmente.</p>
+          </div>
+        </section>
+
+        <!-- Dynamic View: Perfil e Configurações (Mockup Spec) -->
+        <section id="netSettingsContainer" class="net-settings-container streamflix-profile-settings-screen" style="display:none;">
+          <div class="streamflix-settings-workspace">
+            
+            <!-- Left Navigation Menu (Mockup Spec) -->
+            <div class="streamflix-settings-sidebar">
+              <button class="settings-nav-item active" data-settings-tab="profile">
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                <span>Perfil e Configurações</span>
+              </button>
+              <button class="settings-nav-item" data-nav="favorites">
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+                <span>Minha Lista</span>
+              </button>
+              <button class="settings-nav-item" data-nav="history">
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                <span>Histórico</span>
+              </button>
+              <button class="settings-nav-item" data-settings-tab="config">
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+                <span>Configurações</span>
+              </button>
+              <button class="settings-nav-item" data-settings-tab="help">
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                <span>Ajuda</span>
+              </button>
+              <button class="settings-nav-item" data-nav="logout">
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></svg>
+                <span>Sair</span>
+              </button>
+            </div>
+
+            <!-- Right Content Area (Mockup Spec) -->
+            <div class="streamflix-settings-content">
+              
+              <!-- User Profile Card -->
+              <div class="streamflix-user-header-card">
+                <div class="streamflix-user-avatar-circle" id="settingsUserAvatar">👤</div>
+                <div class="streamflix-user-info-meta">
+                  <h3 class="streamflix-user-full-name" id="settingsUserName">Minha Conta</h3>
+                  <div class="streamflix-user-status-badge">
+                    <span class="status-dot-green"></span>
+                    <span>Assinatura Ativa</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Perfis Section -->
+              <div class="streamflix-profiles-row-section">
+                <h4 class="streamflix-section-subtitle">Perfis</h4>
+                <div class="streamflix-profiles-circles-row" id="settingsProfilesRow">
+                  <!-- Preenchido dinamicamente pelo JS com os perfis reais da conta -->
+                </div>
+              </div>
+
+              <!-- Quick Settings 2x2 Grid (Mockup Spec) -->
+              <div class="streamflix-quick-settings-grid">
+                <!-- Idioma -->
+                <div class="quick-setting-card">
+                  <span class="quick-setting-label">Idioma</span>
+                  <span class="quick-setting-val">Português</span>
+                </div>
+
+                <!-- Qualidade de Vídeo -->
+                <div class="quick-setting-card">
+                  <span class="quick-setting-label">Qualidade de Vídeo</span>
+                  <span class="quick-setting-val">Automática</span>
+                </div>
+
+                <!-- Controle Parental -->
+                <div class="quick-setting-card">
+                  <span class="quick-setting-label">Controle Parental</span>
+                  <span class="quick-setting-val">Desativado</span>
+                </div>
+
+                <!-- Notificações -->
+                <div class="quick-setting-card">
+                  <span class="quick-setting-label">Notificações</span>
+                  <span class="quick-setting-val">Ativadas</span>
+                </div>
+              </div>
+
+              <!-- Streamflix Promo & Device Ecosystem Showcase (Mockup Spec Right Panel) -->
+              <div class="streamflix-promo-card">
+                <div class="streamflix-promo-brand-row">
+                  <div class="streamflix-brand-logo-wrap">
+                    <svg viewBox="0 0 24 24" width="22" height="22" fill="#E50914"><path d="M5 3l15 9-15 9V3z"/></svg>
+                  </div>
+                  <span class="streamflix-brand-title">Streamflix</span>
+                </div>
+                <h4 class="streamflix-promo-headline">Tudo o que você ama, em um só lugar.</h4>
+                <p class="streamflix-promo-desc">
+                  O Streamflix é um IPTV completo, unindo o melhor do streaming com a experiência de TV ao vivo. Aqui você encontra filmes, séries, animes, esportes, canais de TV e muito mais — tudo em um só app.
+                </p>
+
+                <div class="streamflix-features-list">
+                  <div class="promo-feature-item">
+                    <span class="feature-icon">🎬</span>
+                    <div class="feature-text"><strong>Filmes:</strong> Lançamentos, clássicos e muito mais.</div>
+                  </div>
+                  <div class="promo-feature-item">
+                    <span class="feature-icon">📺</span>
+                    <div class="feature-text"><strong>Séries:</strong> As melhores séries do mundo.</div>
+                  </div>
+                  <div class="promo-feature-item">
+                    <span class="feature-icon">📡</span>
+                    <div class="feature-text"><strong>Canais de TV:</strong> Canais nacionais e internacionais.</div>
+                  </div>
+                  <div class="promo-feature-item">
+                    <span class="feature-icon">⚽</span>
+                    <div class="feature-text"><strong>Esportes:</strong> Futebol, MMA, F1, NBA e muito mais.</div>
+                  </div>
+                  <div class="promo-feature-item">
+                    <span class="feature-icon">👶</span>
+                    <div class="feature-text"><strong>Infantil:</strong> Conteúdo seguro para toda a família.</div>
+                  </div>
+                  <div class="promo-feature-item">
+                    <span class="feature-icon">⭐</span>
+                    <div class="feature-text"><strong>Animes:</strong> Os maiores sucessos do Japão.</div>
+                  </div>
+                  <div class="promo-feature-item">
+                    <span class="feature-icon">✨</span>
+                    <div class="feature-text"><strong>E muito mais...</strong> Documentários, reality shows e conteúdos exclusivos.</div>
+                  </div>
+                </div>
+
+                <div class="streamflix-integration-tagline">
+                  <strong>Streamflix</strong> &bull; Prime + Netflix + TV ao vivo<br>
+                  <span>Tudo junto. Sem complicação.</span>
+                </div>
+
+                <!-- Multi-Device Footer -->
+                <div class="streamflix-devices-footer">
+                  <div class="devices-title">Assista do seu jeito, onde quiser.</div>
+                  <div class="devices-icons-row">
+                    <div class="device-pill"><span>📺</span> TV</div>
+                    <div class="device-pill"><span>📱</span> Celular</div>
+                    <div class="device-pill"><span>💻</span> Tablet</div>
+                    <div class="device-pill"><span>🖥️</span> Computador</div>
+                  </div>
+                </div>
+
+              </div>
+
+              <!-- Legacy compatibility elements for settings controls -->
+              <div style="display:none;">
+                <input type="checkbox" id="settingDataSaverToggle">
+                <span id="lblSettingDataSaverStatus"></span>
+                <input type="checkbox" id="settingHotspotToggle">
+                <span id="lblSettingHotspotStatus"></span>
+                <select id="settingStorageLocation"><option value="internal">Padrão</option></select>
+                <button id="btnSettingsOpenProfiles"></button>
+                <button id="btnSettingsOpenPlaylist"></button>
+                <button id="btnSettingsRunGuardian"></button>
+              </div>
+
+            </div>
+
+          </div>
+        </section>
+
+      </div>
+    </main>
+
+    <!-- ====================================================================
+         VIEW: NETFLIX FULLSCREEN CINEMA PLAYER LAYER (100% Imersivo)
+         ==================================================================== -->
+    <div id="netflixPlayerLayer" class="netflix-player-fullscreen-layer" style="display:none;">
+      <div class="player-wrapper tv-player-active tv-player-fullscreen" id="playerWrapper">
+        <video id="videoElement" playsinline autoplay crossorigin="anonymous"></video>
+
+        <!-- Unmute Floating Banner -->
+        <button id="playerUnmutePill" class="player-unmute-pill" style="display:none;" title="Ativar áudio">
+          <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2">
+            <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
+            <line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/>
+          </svg>
+          <span>Vídeo em reprodução sem som &bull; <b>Clique para ativar o áudio 🔊</b></span>
+        </button>
+
+        <!-- Loading Spinner & Status Overlay -->
+        <div class="player-status-overlay" id="playerStatusOverlay" style="display:none;">
+          <div class="net-spinner" id="playerSpinner"></div>
+          <p id="playerStatusMessage">Carregando streaming...</p>
+          <button id="btnRetryStream" class="btn-retry-pill" style="display:none;">Tentar via Proxy</button>
+        </div>
+
+        <!-- Top Header OSD: Back Arrow + Title + Subtitles -->
+        <div class="netflix-player-top-osd" id="playerTopOverlay">
+          <button id="btnExitNetflixPlayer" class="btn-net-back" tabindex="0" title="Voltar (Esc / Voltar no Controle)">
+            <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
             <span>Voltar</span>
           </button>
-          <button type="submit" class="btn-submit-main" id="btnForgotAction" style="flex:1;">
-            <span id="txtForgotAction">RECUPERAR SENHA 🔑</span>
-          </button>
-        </div>
-      </form>
 
-      <!-- Form 4: Profiles Management Tab on Mobile -->
-      <div id="formProfilesTab" style="display:none; text-align:left;">
-        <div style="background:rgba(0,210,255,0.08); border:1px solid rgba(0,210,255,0.25); border-radius:14px; padding:14px; margin-bottom:16px;">
-          <div style="font-size:0.75rem; text-transform:uppercase; color:#8fa0b5; font-weight:700;">Conta Ativa:</div>
-          <div id="mobActiveEmailDisplay" style="font-size:1rem; font-weight:800; color:#00D2FF; margin-top:2px;">angeloregis@gmail.com</div>
-          <div id="mobAccountCodeDisplay" style="font-size:0.75rem; color:#cbd5e1; margin-top:2px;">Código: ACC_BD24EFDF</div>
+          <div class="net-player-title-box">
+            <h2 id="playerChannelTitle" class="net-player-main-title">Título do Conteúdo</h2>
+            <div class="net-player-sub-meta">
+              <span id="playerChannelTypeBadge" class="net-meta-badge">FILME</span>
+              <span id="playerChannelGroup" class="net-meta-badge muted">Geral</span>
+              <span id="playerLiveBadge" class="live-dot-badge" style="display:none;">🔴 AO VIVO</span>
+              <span id="playerQualityBadge" class="net-meta-badge quality" style="display:none;">4K</span>
+              <span id="playerPausedIndicatorBadge" class="net-meta-badge paused" style="display:none;">⏸ PAUSADO</span>
+            </div>
+          </div>
+
+          <div class="net-player-top-actions">
+            <button id="btnTopSubtitles" class="net-player-tool-btn" tabindex="0" title="Configurar Legendas e Áudio">
+              <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/><line x1="9" y1="10" x2="15" y2="10"/><line x1="9" y1="14" x2="13" y2="14"/></svg>
+              <span id="lblTopSubtitles">Legendas</span>
+            </button>
+            <button id="btnTopTranslateScene" class="net-player-tool-btn highlight" tabindex="0" title="Traduzir Texto da Tela do Filme (OCR)">
+              <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+              <span>Traduzir Cena</span>
+            </button>
+            <label class="net-proxy-label" title="Ative se o servidor exigir proxy">
+              <input type="checkbox" id="chkUseProxy">
+              <span>Proxy</span>
+            </label>
+          </div>
         </div>
 
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
-          <h3 style="margin:0; font-size:1.05rem; color:#fff;">Perfis da Conta</h3>
-          <button type="button" class="btn-add-profile-mob" onclick="openMobAddProfileModal()">
-            + Novo Perfil
-          </button>
+        <!-- Center OSD: Permanently suppressed per user request to keep center screen 100% clean -->
+        <div class="netflix-center-osd" id="netflixCenterOsd" style="display:none !important; position:absolute !important; top:-9999px !important; pointer-events:none !important; opacity:0 !important; visibility:hidden !important;" aria-hidden="true"></div>
+
+        <!-- On-Screen TV Volume HUD (Samsung Remote 447/448/449) -->
+        <div id="tvVolumeHud" class="tv-volume-hud" style="display:none;">
+          <div class="tv-volume-icon-box" id="tvVolumeIcon">🔊</div>
+          <div class="tv-volume-info">
+            <div class="tv-volume-top-row">
+              <span class="tv-volume-label">VOLUME DA TV</span>
+              <span class="tv-volume-percent" id="tvVolumePercent">70%</span>
+            </div>
+            <div class="tv-volume-bar-track">
+              <div class="tv-volume-bar-fill" id="tvVolumeBarFill" style="width: 70%;"></div>
+            </div>
+          </div>
         </div>
 
-        <div id="mobProfilesList" class="mob-profiles-grid">
-          <!-- Populated by JS -->
+        <!-- Netflix / Prime Video Style Seeking & Scrubbing HUD -->
+        <div id="netflixSeekHud" class="netflix-seek-hud">
+          <div class="seek-hud-badge" id="seekHudBadge">
+            <span id="seekHudIcon">⏩</span>
+            <span id="seekHudDelta">+10s</span>
+          </div>
+          <div class="seek-hud-time">
+            <span id="seekHudTarget">00:00:00</span>
+            <span style="opacity: 0.6; font-size: 1.1rem;" id="seekHudTotal"> / 00:00:00</span>
+          </div>
+          <div class="seek-hud-bar-wrap">
+            <div class="seek-hud-bar-fill" id="seekHudBarFill"></div>
+          </div>
         </div>
+
+        <!-- Floating Pause Translate Scene Button -->
+        <button id="btnFloatingPauseTranslate" class="floating-pause-translate" style="display:none;" title="Traduzir Texto desta Cena">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+          <span>Traduzir Texto desta Cena</span>
+        </button>
+
+        <!-- Floating On-Screen Text Translation Overlay -->
+        <div id="screenSubtitleOverlay" class="screen-subtitle-overlay" style="display:none;">
+          <div class="screen-sub-card">
+            <div class="screen-sub-header">
+              <span class="screen-sub-tag">🇧🇷 LEGENDA DO TEXTO DA CENA</span>
+              <button id="btnCloseScreenSub" class="screen-sub-close" title="Fechar">&times;</button>
+            </div>
+            <p id="screenSubText" class="screen-sub-content">Traduzindo texto na tela...</p>
+          </div>
+        </div>
+
+        <!-- Bottom OSD Player Controls (Auto-hiding) -->
+        <div class="netflix-player-bottom-osd" id="playerControls">
+          <!-- Floating On-Screen Indicator of Focused Player Button -->
+          <div id="playerFocusLabelPill" class="player-focus-label-pill" style="display:none;">
+            <span id="playerFocusLabelText">Legendas</span>
+          </div>
+
+          <!-- Timeline with Buffer & Red Progress Scrubber & Floating Scene Preview -->
+          <div class="netflix-scrubber-row" id="playerTimeline">
+            <!-- Floating Netflix-Style Scene Preview Bubble -->
+            <div class="netflix-scrubber-preview" id="netflixScrubberPreview" style="display:none;">
+              <div class="preview-thumbnail-frame">
+                <canvas id="previewCanvas" width="240" height="135" class="preview-canvas" style="display:none;"></canvas>
+                <div id="previewCardBackdrop" class="preview-card-backdrop">
+                  <div class="preview-film-icon">🎬</div>
+                  <span id="previewCardTitle" class="preview-card-title">Cena do Vídeo</span>
+                </div>
+                <div class="preview-badges-row">
+                  <span id="previewTimeBadge" class="preview-time-badge">00:00:00</span>
+                  <span id="previewDeltaBadge" class="preview-delta-badge">+00:10</span>
+                </div>
+              </div>
+              <div class="preview-arrow-down"></div>
+            </div>
+
+            <span class="scrubber-time" id="timelineCurrent">00:00</span>
+            <div class="netflix-scrubber-track" id="netflixScrubberTrack">
+              <div class="netflix-scrubber-buffer" id="netflixScrubberBuffer"></div>
+              <div class="netflix-scrubber-progress" id="netflixScrubberProgress"></div>
+              <input type="range" class="timeline-slider netflix-range" id="timelineSlider" min="0" max="100" value="0" step="0.1" tabindex="0">
+            </div>
+            <span class="scrubber-time remaining" id="timelineDuration">00:00</span>
+          </div>
+
+          <!-- Bottom Control Bar -->
+          <div class="netflix-controls-bar">
+            <div class="ctrls-left">
+              <button id="btnPlayPause" class="net-ctrl-btn" tabindex="0" title="Play/Pause">
+                <svg id="iconPlay" viewBox="0 0 24 24" width="24" height="24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                <svg id="iconPause" viewBox="0 0 24 24" width="24" height="24" fill="currentColor" style="display:none;"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>
+              </button>
+              <button id="btnPrevChannel" class="net-ctrl-btn" tabindex="0" title="Anterior">
+                <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><polygon points="19 20 9 12 19 4 19 20"/><line x1="5" y1="19" x2="5" y2="5" stroke="currentColor" stroke-width="2"/></svg>
+              </button>
+              <button id="btnNextChannel" class="net-ctrl-btn" tabindex="0" title="Próximo">
+                <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><polygon points="5 4 15 12 5 20 5 4"/><line x1="19" y1="5" x2="19" y2="19" stroke="currentColor" stroke-width="2"/></svg>
+              </button>
+              <button id="btnNextEpisode" class="btn-net-next-ep" tabindex="0" title="Próximo Episódio" style="display:none;">
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><polygon points="5 4 15 12 5 20 5 4"/><line x1="19" y1="5" x2="19" y2="19" stroke="currentColor" stroke-width="2"/></svg>
+                <span>Próximo Episódio</span>
+              </button>
+              
+              <div class="net-volume-wrap">
+                <button id="btnMute" class="net-ctrl-btn" tabindex="0" title="Mudo">
+                  <svg id="iconVolumeHigh" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>
+                  <svg id="iconVolumeMuted" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" style="display:none;"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/></svg>
+                </button>
+                <input type="range" id="volumeSlider" class="net-vol-slider" min="0" max="1" step="0.05" value="1" tabindex="0">
+              </div>
+            </div>
+
+            <div class="ctrls-right">
+              <button id="btnSubtitles" class="net-ctrl-btn" tabindex="0" title="Legendas">
+                <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/><line x1="9" y1="10" x2="15" y2="10"/><line x1="9" y1="14" x2="13" y2="14"/></svg>
+              </button>
+              <select id="selectSubtitles" class="ctrl-select" style="display:none;"><option value="-1">Sem Legenda</option></select>
+              <select id="selectQuality" class="ctrl-select" style="display:none;"></select>
+
+              <button id="btnAspectRatio" class="net-ctrl-btn text-btn" tabindex="0" title="Proporção">16:9</button>
+              <button id="btnFullscreen" class="net-ctrl-btn" tabindex="0" title="Tela Cheia (F)">
+                <svg id="iconExpand" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/></svg>
+                <svg id="iconCompress" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" style="display:none;"><path d="M4 14h6m0 0v6m0-6L3 21m17-7h-6m0 0v6m0-6 7 7M10 4v6m0 0H4m6 0L3 3m10 7V4m0 6h6m-6 0 7-7"/></svg>
+              </button>
+            </div>
+          </div>
+        </div>
+
       </div>
-
-      <div class="alert-box alert-error" id="boxError"></div>
     </div>
 
-    <!-- Tela de Sucesso -->
-    <div class="success-card" id="successView">
-      <div class="success-icon">🎉</div>
-      <h1 style="color:#00ff88; margin-bottom: 8px;">Smart TV Conectada!</h1>
-      <p class="subtitle" style="margin-bottom: 20px;">Sua conta e catálogo foram sincronizados com sucesso. A Smart TV já iniciou na sua sala!</p>
-      
-      <div class="tv-detected-pill" style="border-color:#00ff88; color:#00ff88; background: rgba(0,255,136,0.15);">
-        <span>✓ Sincronizado em tempo real</span>
+    <!-- Hidden compatibility bridges for old element queries -->
+    <div id="dashboardView" style="display:none !important;"></div>
+    <div id="browserView" style="display:none !important;"></div>
+    <div id="colPlayer" style="display:none !important;"></div>
+    <div id="browserWorkspace" style="display:none !important;"></div>
+    <div id="btnBackToCatalog" style="display:none !important;"></div>
+    <div id="categoriesList" style="display:none !important;"></div>
+    <div id="itemsList" style="display:none !important;"></div>
+    <div id="itemsGrid" style="display:none !important;"></div>
+    <div id="colCategories" style="display:none !important;"></div>
+    <div id="colItems" style="display:none !important;"></div>
+    <div id="seriesSubView" style="display:none !important;"></div>
+
+  </div>
+
+  <!-- ====================================================================
+       MODAL DE STREAMING CINEMA (NETFLIX / DISNEY+ STYLE) - FILMES E SÉRIES
+       ==================================================================== -->
+  <div class="streaming-modal-backdrop streamflix-detail-modal" id="streamingDetailModal" style="display:none;">
+    <div class="streaming-modal-container streamflix-detail-container">
+      <!-- Modal Top Bar -->
+      <div class="streamflix-detail-topbar">
+        <h3 class="streamflix-detail-topbar-title">Detalhes do Conteúdo</h3>
+        <div style="display:flex; align-items:center; gap:12px;">
+          <button class="streamflix-header-icon-btn" title="Buscar"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></button>
+          <button class="streaming-modal-close" id="btnCloseStreamingModal" title="Fechar" tabindex="0">&times;</button>
+        </div>
       </div>
 
-      <!-- Gerenciamento de Perfis no Sucesso -->
-      <div style="margin-top:24px; text-align:left; border-top:1px solid rgba(255,255,255,0.1); padding-top:20px;">
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
-          <div>
-            <h3 style="margin:0; font-size:1.1rem; color:#fff;">Perfis da sua Conta</h3>
-            <span style="font-size:0.78rem; color:#94a3b8;">Crie e edite perfis direto pelo celular</span>
+      <!-- Cinema Backdrop Header -->
+      <div class="streaming-modal-hero" id="modalHeroBackdrop">
+        <div class="streaming-hero-gradient-overlay"></div>
+        <div class="streaming-hero-content">
+          <div class="streaming-poster-card">
+            <img id="modalPosterImg" alt="" class="streaming-poster-img" onerror="this.style.display='none';">
           </div>
-          <button type="button" class="btn-add-profile-mob" onclick="openMobAddProfileModal()">
-            + Novo Perfil
-          </button>
+          <div class="streaming-title-block">
+            <h2 id="modalContentTitle" class="streaming-title-text">Filme</h2>
+            <div class="streaming-meta-row" id="modalBadgesRow">
+              <span id="modalTypeBadge" class="meta-badge-blue">Filme</span>
+              <span id="modalAgeBadge" class="meta-badge-red">14</span>
+              <span id="modalGenreBadge" class="meta-badge-glass">Ação</span>
+            </div>
+
+            <!-- Synopsis & Stats right under title block -->
+            <p id="modalPlotHeader" class="streaming-plot-text-header"></p>
+            <div class="streaming-stats-row" id="modalStatsRow"></div>
+
+            <!-- Play Actions Row (Mockup Spec) -->
+            <div class="streaming-actions-row">
+              <button id="btnModalPlayMain" class="btn-detail-play-blue" tabindex="0">
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><polygon points="6 4 19 12 6 20 6 4"/></svg>
+                <span id="modalPlayMainText">Assistir Filme</span>
+              </button>
+              <button id="btnModalFav" class="btn-detail-glass" title="Adicionar aos Favoritos" tabindex="0">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
+                <span id="lblModalFav">Minha Lista</span>
+              </button>
+              <button id="btnModalTrailer" class="btn-detail-glass" tabindex="0">
+                <span id="lblModalMore">Mais opções</span>
+              </button>
+              <button id="btnModalDownload" class="btn-detail-glass" style="display:none;"><span>Baixar</span></button>
+            </div>
+          </div>
         </div>
-        <div id="mobSuccessProfilesList" class="mob-profiles-grid">
-          <!-- Populated by JS -->
+      </div>
+
+      <!-- Body / Synopsis & Credits -->
+      <div class="streaming-modal-body">
+        <div class="streaming-info-section">
+          <div class="section-title-row">
+            <h4 class="streaming-section-heading">Sinopse</h4>
+            <button id="btnTranslateSynopsis" class="btn-text-action" style="display:none;">
+              <span>🌐 Traduzir Sinopse</span>
+            </button>
+          </div>
+          <p id="modalPlotBody" class="streaming-plot-text">Carregando sinopse oficial...</p>
+          <div id="modalPlotTranslationBox" class="translation-caption-box" style="display:none;">
+            <div class="trans-badge"><span class="flag">🇧🇷</span> Legenda Explicativa (Tradução para o Português):</div>
+            <p id="modalPlotTranslatedText" class="trans-text"></p>
+          </div>
+        </div>
+
+        <div class="streaming-credits-grid">
+          <div class="streaming-credit-item" id="modalDirectorBox">
+            <span class="credit-lbl">Direção</span>
+            <span class="credit-val" id="modalDirectorText">-</span>
+          </div>
+          <div class="streaming-credit-item" id="modalCastBox">
+            <span class="credit-lbl">Elenco Principal</span>
+            <span class="credit-val" id="modalCastText">-</span>
+          </div>
+        </div>
+
+        <!-- Series Special Section: Seasons & Episode Cards -->
+        <div class="streaming-series-section" id="modalSeriesSection" style="display:none;">
+          <div class="streaming-series-header">
+            <h3 class="streaming-section-heading">Temporadas & Episódios</h3>
+            <div class="streaming-season-tabs" id="modalSeasonTabs">
+              <!-- Rendered by JS: [ Temporada 1 ] [ Temporada 2 ] -->
+            </div>
+          </div>
+          <div class="streaming-episodes-grid" id="modalEpisodesGrid">
+            <!-- Rendered by JS: Cards of each episode with Play button! -->
+          </div>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- Modal Mobile: Criar / Editar Perfil -->
-  <div id="modalProfileMobile" class="mob-modal-overlay" style="display:none;">
-    <div class="mob-modal-card">
-      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
-        <h2 id="mobModalTitle" style="margin:0; font-size:1.15rem; color:#fff;">Criar Novo Perfil</h2>
-        <button type="button" onclick="closeMobProfileModal()" style="background:none; border:none; color:#8fa0b5; font-size:1.8rem; cursor:pointer; line-height:1;">&times;</button>
-      </div>
-      <form onsubmit="handleMobSaveProfile(event)">
-        <input type="hidden" id="mobEditingProfId" value="">
-        <div class="form-group">
-          <label for="mobProfName">Nome do Perfil</label>
-          <input type="text" id="mobProfName" placeholder="Ex: Carlos, Angelo, Família..." maxlength="20" required>
+  <!-- ====================================================================
+       MODAL: REPRODUTOR DE TRAILER EM ALTA DEFINIÇÃO
+       ==================================================================== -->
+  <div class="trailer-modal-backdrop" id="trailerModal" style="display:none;">
+    <div class="trailer-modal-box">
+      <div class="trailer-modal-header">
+        <div class="trailer-title-wrap">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="#ff4d4d"><path d="M21.58 7.19a2.7 2.7 0 0 0-1.9-1.9C18 5 12 5 12 5s-6 0-7.68.29a2.7 2.7 0 0 0-1.9 1.9A28.4 28.4 0 0 0 2 12a28.4 28.4 0 0 0 .42 4.81 2.7 2.7 0 0 0 1.9 1.9C6 19 12 19 12 19s6 0 7.68-.29a2.7 2.7 0 0 0 1.9-1.9A28.4 28.4 0 0 0 22 12a28.4 28.4 0 0 0-.42-4.81zM10 15V9l5.2 3-5.2 3z"/></svg>
+          <h4 id="trailerModalTitle">Trailer Oficial</h4>
         </div>
-        <div class="form-group">
-          <label>Escolha o Avatar / Cor</label>
-          <div class="mob-avatar-picker" id="mobAvatarPicker">
-            <!-- Rendered by JS -->
+        <button id="btnCloseTrailer" class="btn-close-trailer" title="Fechar Trailer">&times;</button>
+      </div>
+      <div class="trailer-iframe-wrap" id="trailerIframeWrap">
+        <!-- Injected by JS -->
+      </div>
+    </div>
+  </div>
+
+  <!-- ====================================================================
+       MODAL: GERENCIAR E ADICIONAR LISTAS M3U / XTREAM
+       ==================================================================== -->
+  <div class="modal-backdrop" id="modalBackdrop" style="display:none;">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3>Carregar ou Trocar Lista IPTV</h3>
+        <button id="btnCloseModal" class="btn-close">&times;</button>
+      </div>
+
+      <div class="modal-tabs">
+        <button class="tab-btn active" data-tab="tabUrl">Por URL M3U</button>
+        <button class="tab-btn" data-tab="tabFile">Arquivo Local</button>
+        <button class="tab-btn" data-tab="tabXtream">Xtream Codes</button>
+      </div>
+
+      <div class="modal-body">
+        <!-- Tab 1: URL -->
+        <div class="tab-content" id="tabUrl">
+          <label>URL da Lista (.m3u ou .m3u8):</label>
+          <input type="text" id="m3uUrlInput" class="input-field" placeholder="http://servidor.com:8080/get.php?username=...&output=ts">
+          <label style="margin-top:10px;">Nome de Identificação:</label>
+          <input type="text" id="m3uNameInput" class="input-field" placeholder="Minha Lista IPTV">
+          <button id="btnSubmitUrl" class="btn-submit-modal" style="margin-top:18px;">Salvar e Carregar Lista</button>
+        </div>
+
+        <!-- Tab 2: Arquivo Local -->
+        <div class="tab-content" id="tabFile" style="display:none;">
+          <div class="file-drop-zone" id="fileDropZone">
+            <svg viewBox="0 0 24 24" width="36" height="36" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12"/></svg>
+            <p>Clique ou arraste seu arquivo <strong>.m3u</strong> aqui</p>
+            <input type="file" id="fileInput" accept=".m3u,.m3u8,.txt" style="display:none;">
+          </div>
+          <div id="fileSelectedInfo" class="file-selected-info" style="display:none;">
+            Arquivo: <strong id="selectedFileName"></strong>
+          </div>
+          <button id="btnSubmitFile" class="btn-submit-modal" style="margin-top:18px;" disabled>Salvar e Importar Arquivo</button>
+        </div>
+
+        <!-- Tab 3: Xtream Codes -->
+        <div class="tab-content" id="tabXtream" style="display:none;">
+          <label>Servidor / Host:</label>
+          <input type="text" id="xtreamHostInput" class="input-field" placeholder="http://servidor.com:8080">
+          <label style="margin-top:10px;">Usuário:</label>
+          <input type="text" id="xtreamUserInput" class="input-field" placeholder="usuario">
+          <label style="margin-top:10px;">Senha:</label>
+          <input type="password" id="xtreamPassInput" class="input-field" placeholder="••••••••">
+          <button id="btnSubmitXtream" class="btn-submit-modal" style="margin-top:18px;">Salvar e Conectar via Xtream</button>
+        </div>
+      </div>
+
+      <div id="modalAlert" class="modal-alert" style="display:none;"></div>
+    </div>
+  </div>
+
+  <!-- ====================================================================
+       MODAL DE SELEÇÃO DE LEGENDAS (SUBTITLES) & CARREGAMENTO EXTERNO
+       ==================================================================== -->
+  <div class="modal-backdrop" id="subtitlesModal" style="display:none;">
+    <div class="modal-card" style="max-width: 520px;">
+      <div class="modal-header">
+        <div style="display:flex; align-items:center; gap:8px;">
+          <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="#00d2ff" stroke-width="2">
+            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+            <line x1="9" y1="10" x2="15" y2="10"/>
+            <line x1="9" y1="14" x2="13" y2="14"/>
+          </svg>
+          <h3 style="margin:0; font-size:1.15rem;">Configurar Legendas & Tradução</h3>
+        </div>
+        <button id="btnCloseSubtitlesModal" class="btn-close">&times;</button>
+      </div>
+      <div class="modal-body" style="padding: 18px 20px; display:flex; flex-direction:column; gap:16px;">
+        <!-- Seção 1: Faixas de Legenda Disponíveis -->
+        <div>
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+            <label style="font-size:0.85rem; font-weight:700; color:#e2e8f0; text-transform:uppercase; letter-spacing:0.04em;">Faixas de Legenda do Vídeo:</label>
+            <span id="lblSubtitleTrackCount" style="font-size:0.78rem; color:#8fa0b5;">0 faixas</span>
+          </div>
+          <div id="subtitlesTracksList" class="subtitles-tracks-list">
+            <!-- Populated by JS -->
           </div>
         </div>
-        <div style="display:flex; align-items:center; gap:10px; margin: 16px 0;">
-          <input type="checkbox" id="mobChkKids" style="width:20px; height:20px; accent-color:#00D2FF; cursor:pointer;">
-          <label for="mobChkKids" style="margin:0; font-size:0.85rem; text-transform:none; color:#e2e8f0; cursor:pointer;">
-            Perfil Infantil / Kids (Filmes e Séries livres)
+
+        <!-- Seção 2: Carregar Legenda Externa ou Buscar na Web -->
+        <div class="sub-actions-section">
+          <label style="font-size:0.85rem; font-weight:700; color:#e2e8f0; text-transform:uppercase; letter-spacing:0.04em; display:block; margin-bottom:8px;">
+            Opções de Legenda:
           </label>
-        </div>
-        <div style="display:flex; gap:10px; margin-top:20px;">
-          <button type="button" class="btn-submit-main" style="background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.2); color:#cbd5e1; flex:1;" onclick="closeMobProfileModal()">
-            Cancelar
+
+          <!-- Botão Principal: Criar Legenda Automática por IA (Análise de Contexto) -->
+          <button id="btnAutoSubtitle" class="sub-action-btn auto" style="margin-bottom:10px;" title="Cria legendas automáticas em português com análise profunda do contexto e diálogos da obra">
+            <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor">
+              <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
+            </svg>
+            <div style="text-align:left;">
+              <div style="font-weight:800; font-size:0.95rem;">✨ Criar Legenda Automática com IA (PT-BR)</div>
+              <div style="font-size:0.75rem; opacity:0.9;">Gera na hora analisando o contexto, trama e diálogos da obra (Sem depender de arquivos externos!)</div>
+            </div>
           </button>
-          <button type="submit" class="btn-submit-main" style="flex:2;" id="btnMobSaveProfile">
-            <span>SALVAR PERFIL ✨</span>
+          
+          <input type="file" id="inputSubtitleFile" accept=".srt,.vtt" style="display:none;">
+          <button id="btnLoadCustomSub" class="sub-action-btn primary" title="Carregar arquivo .srt ou .vtt do seu computador">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12"/>
+            </svg>
+            <div style="text-align:left;">
+              <div style="font-weight:700;">Carregar Arquivo de Legenda (.srt / .vtt)</div>
+              <div style="font-size:0.75rem; opacity:0.85;">Adicione a legenda baixada no seu PC diretamente ao filme</div>
+            </div>
           </button>
+
+          <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-top:8px;">
+            <button id="btnSearchWebSub" class="sub-action-btn secondary" title="Procurar legenda deste filme no Google">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+              </svg>
+              <span>Buscar Legenda na Web</span>
+            </button>
+            <button id="btnOpenSceneTranslateFromModal" class="sub-action-btn highlight" title="Traduzir texto ou carta que apareceu no filme">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10"/>
+                <line x1="2" y1="12" x2="22" y2="12"/>
+                <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
+              </svg>
+              <span>Traduzir Cena (OCR)</span>
+            </button>
+          </div>
         </div>
-      </form>
+      </div>
     </div>
   </div>
 
-  <script>
-    const urlParams = new URLSearchParams(window.location.search);
-    const codeParam = urlParams.get('code');
+  <!-- ====================================================================
+       MODAL DE TRADUÇÃO DE TEXTO NA CENA (EX: INVOCAÇÃO DO MAL)
+       ==================================================================== -->
+  <div class="modal-backdrop" id="screenTranslateModal" style="display:none;">
+    <div class="modal-card" style="max-width: 580px;">
+      <div class="modal-header">
+        <div style="display:flex; align-items:center; gap:8px;">
+          <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="#00d2ff" stroke-width="2">
+            <circle cx="12" cy="12" r="10"/>
+            <line x1="2" y1="12" x2="22" y2="12"/>
+            <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
+          </svg>
+          <h3 style="margin:0; font-size:1.15rem;">Traduzir Texto da Cena</h3>
+        </div>
+        <button id="btnCloseScreenModal" class="btn-close">&times;</button>
+      </div>
+      <div class="modal-body" style="padding: 18px 20px; display:flex; flex-direction:column; gap:12px;">
+        <p style="color:#8fa0b5; font-size:0.85rem; margin:0;">
+          Apareceu um texto em inglês na imagem (ex: carta, placa, introdução histórica de Invocação do Mal)? Traduza instantaneamente para o Português:
+        </p>
+        <div id="ocrStatusMsg" style="color:#00d2ff; font-size:0.82rem; font-weight:600; display:none;">
+          🔍 Lendo texto da imagem do filme...
+        </div>
+        <div>
+          <label style="font-size:0.8rem; color:#8fa0b5; display:block; margin-bottom:4px;">Texto Original em Inglês:</label>
+          <textarea id="txtOriginalScreen" class="input-field" rows="3" placeholder="Digite ou cole o texto que apareceu na tela..."></textarea>
+        </div>
+        <button id="btnDoTranslateScreen" class="btn-submit-modal" style="margin:0; padding:10px;">
+          Traduzir para o Português (PT-BR)
+        </button>
+        <div id="boxScreenResult" class="translation-caption-box" style="display:none; margin-top:4px;">
+          <div class="trans-badge"><span class="flag">🇧🇷</span> Tradução em Português:</div>
+          <p id="txtTranslatedScreen" class="trans-text" style="font-size:0.95rem; font-weight:500; color:#fff; line-height:1.5;"></p>
+        </div>
+      </div>
+    </div>
+  </div>
 
-    if (codeParam) {
-      document.getElementById('inputPairCode').value = codeParam.trim();
-      document.getElementById('tvStatusText').textContent = 'Código TV: ' + codeParam.trim();
-    }
-
-    // =========================================================================
-    // RENDER CLOUD BACKEND RESOLVER (Funciona em qualquer lugar do mundo!)
-    // =========================================================================
-    const RENDER_CLOUD_URL = "https://streamflix-server.onrender.com";
-
-    function getApiUrl(endpoint) {
-      if (!endpoint) return "";
-      if (endpoint.startsWith("http://") || endpoint.startsWith("https://")) return endpoint;
-      if (typeof window !== "undefined" && window.location && window.location.origin) {
-        const org = window.location.origin;
-        if (org.startsWith("http") && !org.includes("localhost") && !org.includes("127.0.0.1")) {
-          return endpoint;
-        }
-      }
-      const customUrl = localStorage.getItem("iptv_cloud_backend_url");
-      const base = (customUrl && customUrl.trim()) ? customUrl.trim().replace(/\/+$/, "") : RENDER_CLOUD_URL;
-      return base + (endpoint.startsWith("/") ? endpoint : "/" + endpoint);
-    }
-
-    let activeAccountEmail = localStorage.getItem('iptv_mob_email') || 'angeloregis@gmail.com';
-    let activeAccountCode = localStorage.getItem('iptv_mob_account_code') || 'ACC_BD24EFDF';
-    let mobProfiles = [];
-    let selectedMobAvatar = 'blue';
-
-    const AVAILABLE_AVATARS = [
-      { id: 'gold', name: 'Dourado VIP', color: '#ffd166', icon: '👑' },
-      { id: 'blue', name: 'Azul Neon', color: '#00d2ff', icon: '📺' },
-      { id: 'purple', name: 'Roxo Cyber', color: '#9d4edd', icon: '🎬' },
-      { id: 'red', name: 'Vermelho Live', color: '#ff3366', icon: '⚡' },
-      { id: 'green', name: 'Verde Matrix', color: '#00f5d4', icon: '⭐' },
-      { id: 'kids', name: 'Kids Infantil', color: '#ff9f1c', icon: '🧸', isKids: true }
-    ];
-
-    function switchAuthTab(tab) {
-      hideError();
-      const tabLogin = document.getElementById('tabBtnLogin');
-      const tabReg = document.getElementById('tabBtnRegister');
-      const tabProf = document.getElementById('tabBtnProfiles');
-      const formLogin = document.getElementById('formLoginTab');
-      const formReg = document.getElementById('formRegisterTab');
-      const formForgot = document.getElementById('formForgotTab');
-      const formProf = document.getElementById('formProfilesTab');
-
-      tabLogin.classList.remove('active');
-      tabReg.classList.remove('active');
-      if (tabProf) tabProf.classList.remove('active');
-      formLogin.style.display = 'none';
-      formReg.style.display = 'none';
-      if (formForgot) formForgot.style.display = 'none';
-      if (formProf) formProf.style.display = 'none';
-
-      if (tab === 'login') {
-        tabLogin.classList.add('active');
-        formLogin.style.display = 'block';
-      } else if (tab === 'register') {
-        tabReg.classList.add('active');
-        formReg.style.display = 'block';
-      } else if (tab === 'forgot') {
-        formForgot.style.display = 'block';
-      } else if (tab === 'profiles') {
-        if (tabProf) tabProf.classList.add('active');
-        if (formProf) formProf.style.display = 'block';
-        loadMobProfiles(activeAccountEmail, activeAccountCode);
-      }
-    }
-
-    function openForgotTab(e) {
-      if (e) e.preventDefault();
-      switchAuthTab('forgot');
-      const loginEmail = document.getElementById('loginEmail');
-      const forgotEmail = document.getElementById('forgotEmail');
-      if (loginEmail && forgotEmail && loginEmail.value) {
-        forgotEmail.value = loginEmail.value;
-      }
-      document.getElementById('forgotStep2').style.display = 'none';
-      document.getElementById('forgotSuccessHint').style.display = 'none';
-      document.getElementById('txtForgotAction').textContent = 'RECUPERAR SENHA 🔑';
-    }
-
-    async function handleForgotSubmit(e) {
-      e.preventDefault();
-      hideError();
-      const email = document.getElementById('forgotEmail').value.trim().toLowerCase();
-      if (!email) {
-        showError('Informe seu e-mail cadastrado.');
-        return;
-      }
-
-      if (email === 'angeloregis@gmail.com' || email === 'angelo.regis@gmail.com') {
-        const hintBox = document.getElementById('forgotSuccessHint');
-        hintBox.style.display = 'block';
-        hintBox.innerHTML = '🔑 <strong>Conta Master Identificada!</strong><br>A sua senha de acesso é: <strong>Carlos25Marina15</strong><br><br><button type="button" class="btn-submit-main" style="padding:10px; font-size:0.85rem;" onclick="preencherMasterELogar()">Preencher e Entrar Agora</button>';
-        return;
-      }
-
-      const step2 = document.getElementById('forgotStep2');
-      if (step2.style.display === 'none') {
-        const btn = document.getElementById('btnForgotAction');
-        btn.disabled = true;
-        try {
-          const res = await fetch(getApiUrl('/api/auth/forgot-password'), {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email: email })
-          });
-          const data = await res.json();
-          btn.disabled = false;
-          if (data && data.success) {
-            step2.style.display = 'block';
-            document.getElementById('txtForgotAction').textContent = 'SALVAR NOVA SENHA';
-            const hintBox = document.getElementById('forgotSuccessHint');
-            hintBox.style.display = 'block';
-            hintBox.innerHTML = 'Conta localizada! Digite sua nova senha abaixo.';
-          } else {
-            showError(data.error || 'E-mail não encontrado.');
-          }
-        } catch (err) {
-          btn.disabled = false;
-          showError('Erro ao comunicar com o servidor.');
-        }
-        return;
-      }
-
-      const newPass = document.getElementById('forgotNewPass').value;
-      const confirmPass = document.getElementById('forgotNewPassConfirm').value;
-      if (newPass.length < 6) {
-        showError('A senha precisa ter no mínimo 6 caracteres.');
-        return;
-      }
-      if (newPass !== confirmPass) {
-        showError('As senhas digitadas não coincidem.');
-        return;
-      }
-
-      const btn = document.getElementById('btnForgotAction');
-      btn.disabled = true;
-      try {
-        const res = await fetch(getApiUrl('/api/auth/reset-password'), {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email: email, newPassword: newPass })
-        });
-        const data = await res.json();
-        btn.disabled = false;
-        if (data && data.success) {
-          alert('Senha redefinida com sucesso! Faça login com a nova senha.');
-          document.getElementById('loginEmail').value = email;
-          document.getElementById('loginPassword').value = newPass;
-          switchAuthTab('login');
-        } else {
-          showError(data.error || 'Erro ao redefinir senha.');
-        }
-      } catch (err) {
-        btn.disabled = false;
-        showError('Erro ao conectar ao servidor.');
-      }
-    }
-
-    function preencherMasterELogar() {
-      document.getElementById('loginEmail').value = 'angeloregis@gmail.com';
-      document.getElementById('loginPassword').value = 'Carlos25Marina15';
-      switchAuthTab('login');
-    }
-
-    function showError(msg) {
-      const box = document.getElementById('boxError');
-      box.textContent = msg;
-      box.style.display = 'block';
-    }
-
-    function hideError() {
-      const box = document.getElementById('boxError');
-      box.style.display = 'none';
-      box.textContent = '';
-    }
-
-    async function notifyCloudPairing(code, userObj) {
-      try {
-        await fetch(`https://ntfy.sh/iptv_pair_code_${code}`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            status: 'authorized',
-            user: userObj
-          })
-        });
-      } catch (e) {
-        console.warn('Erro ao notificar nuvem:', e);
-      }
-    }
-
-    // =========================================================================
-    // GERENCIAMENTO DE PERFIS NO CELULAR (Criação, Edição, Seleção de Avatar)
-    // =========================================================================
-    function renderMobAvatarPicker(selectedId) {
-      const grid = document.getElementById('mobAvatarPicker');
-      if (!grid) return;
-      grid.innerHTML = '';
-      AVAILABLE_AVATARS.forEach(av => {
-        const opt = document.createElement('div');
-        opt.className = 'mob-avatar-opt' + (av.id === selectedId ? ' selected' : '');
-        opt.onclick = () => {
-          selectedMobAvatar = av.id;
-          renderMobAvatarPicker(av.id);
-        };
-        opt.innerHTML = `
-          <div class="mob-avatar-opt-circle" style="background:${av.color};">
-            ${av.icon}
+  <!-- ====================================================================
+       MODAL DE ADICIONAR / EDITAR PERFIL (ESTILO NETFLIX)
+       ==================================================================== -->
+  <div class="modal-backdrop" id="profileModal" style="display:none;">
+    <div class="modal-card" style="max-width: 480px;">
+      <div class="modal-header">
+        <div style="display:flex; align-items:center; gap:8px;">
+          <h3 id="profileModalTitle" style="margin:0; font-size:1.15rem;">Adicionar Perfil</h3>
+        </div>
+        <button id="btnCloseProfileModal" class="btn-close">&times;</button>
+      </div>
+      <div class="modal-body" style="padding: 20px; display:flex; flex-direction:column; gap:16px;">
+        <div>
+          <label style="font-size:0.85rem; color:#8fa0b5; display:block; margin-bottom:6px;">Nome do Perfil:</label>
+          <input type="text" id="inputProfileName" class="input-field" placeholder="Ex: Kiqlo, Família, Quarto..." maxlength="20">
+        </div>
+        <div>
+          <label style="font-size:0.85rem; color:#8fa0b5; display:block; margin-bottom:8px;">Escolha a Cor / Avatar:</label>
+          <div class="avatar-picker-grid" id="avatarPickerGrid">
+            <!-- Avatars rendered by JS -->
           </div>
-          <div class="mob-avatar-opt-name">${av.name}</div>
-        `;
-        grid.appendChild(opt);
-      });
-    }
+        </div>
+        <div style="display:flex; align-items:center; gap:10px; margin-top:4px;">
+          <input type="checkbox" id="chkProfileKids" style="width:18px; height:18px; accent-color:#00d2ff; cursor:pointer;">
+          <label for="chkProfileKids" style="font-size:0.85rem; color:#e2e8f0; cursor:pointer;">Perfil Infantil / Kids (Filmes e Séries livres)</label>
+        </div>
+        <div style="display:flex; gap:10px; margin-top:8px;">
+          <button id="btnSaveProfile" class="btn-submit-modal" style="flex:1;">Salvar Perfil</button>
+          <button id="btnDeleteProfile" class="btn-delete-modal" style="display:none;">Excluir</button>
+        </div>
+      </div>
+    </div>
+  </div>
 
-    async function loadMobProfiles(email, accountCode) {
-      const targetEmail = email || activeAccountEmail;
-      const targetCode = accountCode || activeAccountCode;
-
-      document.getElementById('mobActiveEmailDisplay').textContent = targetEmail;
-      document.getElementById('mobAccountCodeDisplay').textContent = 'Código: ' + targetCode;
-
-      try {
-        const res = await fetch(getApiUrl(`/api/sync/profiles?code=${encodeURIComponent(targetCode)}&email=${encodeURIComponent(targetEmail)}`);
-        if (res.ok) {
-          const data = await res.json();
-          if (data && data.profiles) {
-            mobProfiles = data.profiles;
-            renderMobProfilesLists();
-            return;
-          }
-        }
-      } catch (e) {}
-
-      // Fallback Nuvem 24/7
-      try {
-        const cloudRes = await fetch('https://ntfy.sh/iptv_cloud_sync_angeloregis_bd24/json?poll=1');
-        if (cloudRes.ok) {
-          const text = await cloudRes.text();
-          const lines = text.trim().split('\n');
-          let latest = null;
-          for (const line of lines) {
-            try {
-              const ev = JSON.parse(line);
-              if (ev.event === 'message' && ev.message) latest = JSON.parse(ev.message);
-            } catch (_) {}
-          }
-          if (latest && latest.profiles) {
-            mobProfiles = latest.profiles;
-            renderMobProfilesLists();
-            return;
-          }
-        }
-      } catch (e) {}
-
-      // Fallback padrão se for a conta master
-      if (targetEmail.includes('angeloregis')) {
-        mobProfiles = [
-          { id: 'p_1790407508065', name: 'Carlos', avatar: 'gold', isKids: false },
-          { id: 'p_1790717094118', name: 'Angelo', avatar: 'blue', isKids: false }
-        ];
-      } else {
-        mobProfiles = [{ id: 'p1', name: 'Principal', avatar: 'blue', isKids: false }];
-      }
-      renderMobProfilesLists();
-    }
-
-    function renderMobProfilesLists() {
-      const listTab = document.getElementById('mobProfilesList');
-      const listSuccess = document.getElementById('mobSuccessProfilesList');
-      if (listTab) renderSingleMobList(listTab);
-      if (listSuccess) renderSingleMobList(listSuccess);
-    }
-
-    function renderSingleMobList(container) {
-      container.innerHTML = '';
-      if (!mobProfiles || mobProfiles.length === 0) {
-        container.innerHTML = '<div style="color:#94a3b8; font-size:0.85rem; padding:10px 0;">Nenhum perfil cadastrado. Clique em "+ Novo Perfil" para criar.</div>';
-        return;
-      }
-
-      mobProfiles.forEach(prof => {
-        const av = AVAILABLE_AVATARS.find(a => a.id === prof.avatar) || AVAILABLE_AVATARS[0];
-        const item = document.createElement('div');
-        item.className = 'mob-profile-item';
-        item.innerHTML = `
-          <div class="mob-profile-left">
-            <div class="mob-profile-avatar-circle" style="background:${av.color};">
-              ${av.icon}
-            </div>
-            <div class="mob-profile-info">
-              <div class="mob-profile-name">${escapeHtml(prof.name)}</div>
-              ${prof.isKids ? '<span class="mob-profile-badge">Kids</span>' : ''}
-            </div>
+  <!-- ====================================================================
+       MODAL DE CONFIGURAÇÃO DE SINCRONIZAÇÃO (PC, CELULAR E TV)
+       ==================================================================== -->
+  <div class="modal-backdrop" id="syncSettingsModal" style="display:none;">
+    <div class="modal-card" style="max-width: 520px;">
+      <div class="modal-header">
+        <div style="display:flex; align-items:center; gap:8px;">
+          <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="#00d2ff" stroke-width="2">
+            <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/>
+          </svg>
+          <h3 style="margin:0; font-size:1.15rem;">Sincronização Multiplataforma (PC / TV / Celular)</h3>
+        </div>
+        <button id="btnCloseSyncModal" class="btn-close">&times;</button>
+      </div>
+      <div class="modal-body" style="padding: 20px; display:flex; flex-direction:column; gap:14px;">
+        <p style="color:#8fa0b5; font-size:0.85rem; margin:0; line-height:1.5;">
+          Use o mesmo <strong>Código da Conta</strong> no seu <strong>PC, Celular e TV</strong> para que seus perfis e o <em>"Continuar Assistindo"</em> fiquem sincronizados de qualquer lugar:
+        </p>
+        <div>
+          <label style="font-size:0.85rem; color:#8fa0b5; display:block; margin-bottom:6px;">Código da Conta de Sincronização:</label>
+          <div style="display:flex; gap:8px;">
+            <input type="text" id="inputSyncAccountCode" class="input-field" placeholder="Ex: KIQLO" style="font-weight:bold; letter-spacing:1px; text-transform:uppercase;">
+            <button id="btnApplySyncCode" class="btn-submit-modal" style="margin:0; width:auto; padding:0 18px; white-space:nowrap;">Salvar</button>
           </div>
-          <div class="mob-profile-actions">
-            <button type="button" class="btn-mob-edit" onclick="openMobEditProfileModal('${prof.id}')">✏️ Editar</button>
-            ${mobProfiles.length > 1 ? `<button type="button" class="btn-mob-delete" onclick="handleMobDeleteProfile('${prof.id}')">🗑️</button>` : ''}
+        </div>
+        <div style="background:rgba(0,210,255,0.08); border:1px solid rgba(0,210,255,0.2); border-radius:8px; padding:12px; font-size:0.8rem; color:#b0cddb; line-height:1.5;">
+          💡 <strong>Dica:</strong> Para conectar sua Smart TV ou Celular na mesma rede Wi-Fi, você pode acessar pelo navegador: <code id="localIpInfo">http://127.0.0.1:8895</code> ou abrir o <a href="/tv" target="_blank" style="color:#00d2ff; font-weight:bold; text-decoration:underline;">Portal TV & Celular</a>.
+          <div style="margin-top:10px;">
+            <a href="/IPTV_Player.apk" download style="display:inline-flex; align-items:center; gap:6px; background:#00A8E1; color:#fff; text-decoration:none; padding:8px 14px; border-radius:6px; font-weight:bold; font-size:0.85rem; transition:0.2s;">
+              📱 Baixar IPTV Player para Celular (.APK)
+            </a>
           </div>
-        `;
-        container.appendChild(item);
-      });
-    }
+        </div>
+        <div id="syncStatusFeedback" style="font-size:0.82rem; color:#00d2ff; font-weight:600; display:none;">
+          ✅ Sincronizado com sucesso!
+        </div>
+      </div>
+    </div>
+  </div>
+  <!-- ====================================================================
+       MODAL DE CONECTAR LISTA PRÓPRIA (M3U / XTREAM)
+       ==================================================================== -->
+  <div class="modal-backdrop" id="addPlaylistModal" style="display:none;">
+    <div class="modal-card" style="max-width: 540px;">
+      <div class="modal-header">
+        <div style="display:flex; align-items:center; gap:8px;">
+          <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="#00A8E1" stroke-width="2">
+            <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/>
+          </svg>
+          <h3 style="margin:0; font-size:1.15rem;">Conectar Minha Lista de Reprodução</h3>
+        </div>
+        <button id="btnCloseAddPlaylistModal" class="btn-close">&times;</button>
+      </div>
+      <div class="modal-body" style="padding: 20px; display:flex; flex-direction:column; gap:14px;">
+        <p style="color:#8fa0b5; font-size:0.85rem; margin:0; line-height:1.5;">
+          Insira o link M3U da sua assinatura ou fornecedor para carregar instantaneamente seus canais, filmes e séries nesta conta:
+        </p>
+        <div>
+          <label style="font-size:0.85rem; color:#8fa0b5; display:block; margin-bottom:6px;">URL da Lista (M3U ou Xtream):</label>
+          <input type="text" id="inputPlaylistUrlModal" class="input-field" placeholder="http://servidor.com/get.php?username=...&password=..." style="font-size:0.9rem;">
+        </div>
+        <div id="playlistModalStatus" style="font-size:0.85rem; color:#00A8E1; font-weight:600; display:none;"></div>
+        <div style="display:flex; gap:10px; margin-top:6px;">
+          <button id="btnSavePlaylistModal" class="btn-submit-modal" style="flex:1;">
+            <span>Salvar e Carregar Conteúdo</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
 
-    function openMobAddProfileModal() {
-      document.getElementById('mobEditingProfId').value = '';
-      document.getElementById('mobModalTitle').textContent = 'Criar Novo Perfil';
-      document.getElementById('mobProfName').value = '';
-      document.getElementById('mobChkKids').checked = false;
-      selectedMobAvatar = 'gold';
-      renderMobAvatarPicker('gold');
-      document.getElementById('modalProfileMobile').style.display = 'flex';
-      setTimeout(() => document.getElementById('mobProfName').focus(), 100);
-    }
+  <!-- Bluetooth Gamepad Pairing Help Modal -->
+  <div id="gamepadHelpModal" class="gamepad-help-modal" style="display:none;">
+    <div class="gamepad-help-card">
+      <h2>🎮 Conectar controle Bluetooth no PC</h2>
+      <ol>
+        <li>Coloque o controle em modo de pareamento:<br>
+          <small><b>Xbox:</b> segure o botão de parear (topo) até o logo piscar rápido · <b>PS4/PS5:</b> segure <b>Share/Create + PS</b> · <b>8BitDo/genérico:</b> modo X-input (Start + X)</small></li>
+        <li>No Windows: <b>Configurações → Bluetooth e dispositivos → Adicionar dispositivo → Bluetooth</b> e escolha o controle.</li>
+        <li>Volte para esta tela e <b>aperte qualquer botão</b> do controle (o navegador só detecta após um toque).</li>
+      </ol>
+      <table class="gamepad-map">
+        <tr><td>D-Pad / Analógico</td><td>Navegar ↑↓←→ (segure para rolar)</td></tr>
+        <tr><td>A / ✕</td><td>OK / Selecionar</td></tr>
+        <tr><td>B / ◯</td><td>Voltar</td></tr>
+        <tr><td>X / ▢</td><td>Favoritar / Detalhes</td></tr>
+        <tr><td>Y / △</td><td>Busca</td></tr>
+        <tr><td>LB / RB</td><td>Voltar / Avançar 10s</td></tr>
+        <tr><td>LT / RT</td><td>Volume − / + (no player) · Rolar página</td></tr>
+        <tr><td>Start</td><td>Play / Pause</td></tr>
+        <tr><td>Select / View</td><td>Ir para o menu lateral</td></tr>
+        <tr><td>L3 / R3</td><td>Economia de Dados / Modo Viagem</td></tr>
+      </table>
+      <div class="gamepad-help-actions">
+        <button id="btnGamepadOpenBtSettings" class="btn-submit-modal">Abrir Bluetooth do Windows</button>
+        <button id="btnGamepadHelpClose" class="btn-submit-modal">Fechar</button>
+      </div>
+    </div>
+  </div>
 
-    function openMobEditProfileModal(profId) {
-      const prof = mobProfiles.find(p => p.id === profId);
-      if (!prof) return;
-      document.getElementById('mobEditingProfId').value = prof.id;
-      document.getElementById('mobModalTitle').textContent = 'Editar Perfil';
-      document.getElementById('mobProfName').value = prof.name;
-      document.getElementById('mobChkKids').checked = !!prof.isKids;
-      selectedMobAvatar = prof.avatar || 'blue';
-      renderMobAvatarPicker(selectedMobAvatar);
-      document.getElementById('modalProfileMobile').style.display = 'flex';
-      setTimeout(() => document.getElementById('mobProfName').focus(), 100);
-    }
-
-    function closeMobProfileModal() {
-      document.getElementById('modalProfileMobile').style.display = 'none';
-    }
-
-    async function handleMobSaveProfile(e) {
-      e.preventDefault();
-      const profId = document.getElementById('mobEditingProfId').value;
-      const name = document.getElementById('mobProfName').value.trim();
-      const isKids = document.getElementById('mobChkKids').checked;
-      const avatar = selectedMobAvatar || 'blue';
-
-      if (!name) {
-        alert('Digite o nome do perfil.');
-        return;
-      }
-
-      const btn = document.getElementById('btnMobSaveProfile');
-      btn.disabled = true;
-      btn.innerHTML = '<span>Salvando... ⏳</span>';
-
-      const payload = {
-        email: activeAccountEmail,
-        accountCode: activeAccountCode,
-        action: 'save',
-        id: profId || null,
-        name: name,
-        avatar: avatar,
-        isKids: isKids
-      };
-
-      try {
-        const res = await fetch(getApiUrl('/api/sync/profiles'), {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload)
-        });
-        const data = await res.json();
-        if (data && data.profiles) {
-          mobProfiles = data.profiles;
-        } else {
-          // Atualiza localmente
-          if (profId) {
-            const idx = mobProfiles.findIndex(p => p.id === profId);
-            if (idx >= 0) mobProfiles[idx] = { id: profId, name, avatar, isKids };
-          } else {
-            mobProfiles.push({ id: 'p_' + Date.now(), name, avatar, isKids });
-          }
-        }
-      } catch (err) {
-        // Modo offline / nuvem
-        if (profId) {
-          const idx = mobProfiles.findIndex(p => p.id === profId);
-          if (idx >= 0) mobProfiles[idx] = { id: profId, name, avatar, isKids };
-        } else {
-          mobProfiles.push({ id: 'p_' + Date.now(), name, avatar, isKids });
-        }
-      }
-
-      // Sincroniza Nuvem 24/7 imediatamente para refletir na Smart TV em tempo real!
-      try {
-        fetch('https://ntfy.sh/iptv_cloud_sync_angeloregis_bd24', {
-          method: 'POST',
-          headers: { 'Cache': 'yes', 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            accountCode: activeAccountCode,
-            profiles: mobProfiles,
-            progress: {},
-            accounts_data: {
-              [activeAccountCode]: {
-                profiles: mobProfiles,
-                progress: {}
-              }
-            }
-          })
-        });
-      } catch (_) {}
-
-      btn.disabled = false;
-      btn.innerHTML = '<span>SALVAR PERFIL ✨</span>';
-      closeMobProfileModal();
-      renderMobProfilesLists();
-      alert('✅ Perfil salvo e sincronizado com a Smart TV!');
-    }
-
-    async function handleMobDeleteProfile(profId) {
-      if (mobProfiles.length <= 1) {
-        alert('Não é possível excluir o único perfil da conta.');
-        return;
-      }
-      if (!confirm('Deseja excluir este perfil?')) return;
-
-      mobProfiles = mobProfiles.filter(p => p.id !== profId);
-      renderMobProfilesLists();
-
-      try {
-        await fetch(getApiUrl('/api/sync/profiles'), {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            email: activeAccountEmail,
-            accountCode: activeAccountCode,
-            action: 'delete',
-            id: profId
-          })
-        });
-      } catch (_) {}
-
-      try {
-        fetch('https://ntfy.sh/iptv_cloud_sync_angeloregis_bd24', {
-          method: 'POST',
-          headers: { 'Cache': 'yes', 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            accountCode: activeAccountCode,
-            profiles: mobProfiles,
-            progress: {},
-            accounts_data: {
-              [activeAccountCode]: {
-                profiles: mobProfiles,
-                progress: {}
-              }
-            }
-          })
-        });
-      } catch (_) {}
-    }
-
-    function escapeHtml(text) {
-      const map = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' };
-      return String(text).replace(/[&<>"']/g, m => map[m]);
-    }
-
-    // Envio do formulário de Login (Já tenho conta)
-    async function handleLoginSubmit(e) {
-      e.preventDefault();
-      hideError();
-
-      const code = document.getElementById('inputPairCode').value.trim();
-      const email = document.getElementById('loginEmail').value.trim().toLowerCase();
-      const password = document.getElementById('loginPassword').value;
-      const btn = document.getElementById('btnLoginSubmit');
-
-      if (!code || code.length < 6) {
-        showError('Digite o código de 6 dígitos que aparece na tela da TV.');
-        return;
-      }
-      if (!email || !password) {
-        showError('Por favor, informe seu e-mail e senha.');
-        return;
-      }
-
-      btn.disabled = true;
-      btn.innerHTML = '<span>Verificando credenciais... ⏳</span>';
-
-      try {
-        const res = await fetch(getApiUrl('/api/auth/pair/confirm'), {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            code: code,
-            email: email,
-            password: password
-          })
-        });
-
-        const data = await res.json();
-        if (data.success) {
-          activeAccountEmail = email;
-          activeAccountCode = data.accountCode || (data.user && data.user.accountCode) || 'ACC_BD24EFDF';
-          localStorage.setItem('iptv_mob_email', activeAccountEmail);
-          localStorage.setItem('iptv_mob_account_code', activeAccountCode);
-
-          notifyCloudPairing(code, data.user || { email: email, accountCode: activeAccountCode });
-          document.getElementById('mainFormView').style.display = 'none';
-          document.getElementById('successView').style.display = 'block';
-
-          loadMobProfiles(activeAccountEmail, activeAccountCode);
-        } else {
-          showError(data.error || 'E-mail ou senha incorretos.');
-          btn.disabled = false;
-          btn.innerHTML = '<span>ENTRAR NA SMART TV 🚀</span>';
-        }
-      } catch (err) {
-        showError('Falha ao conectar ao servidor local. Verifique se o celular está no mesmo Wi-Fi da TV.');
-        btn.disabled = false;
-        btn.innerHTML = '<span>ENTRAR NA SMART TV 🚀</span>';
-      }
-    }
-
-    // Envio do formulário de Cadastro (Criar Nova Conta)
-    async function handleRegisterSubmit(e) {
-      e.preventDefault();
-      hideError();
-
-      const code = document.getElementById('inputPairCode').value.trim();
-      const email = document.getElementById('regEmail').value.trim().toLowerCase();
-      const password = document.getElementById('regPassword').value;
-      const passwordConfirm = document.getElementById('regPasswordConfirm').value;
-      const playlistUrl = document.getElementById('regPlaylist').value.trim();
-      const btn = document.getElementById('btnRegisterSubmit');
-
-      if (!code || code.length < 6) {
-        showError('Digite o código de 6 dígitos que aparece na tela da TV.');
-        return;
-      }
-      if (!email || !password) {
-        showError('Preencha todos os campos do formulário.');
-        return;
-      }
-      if (password !== passwordConfirm) {
-        showError('As senhas digitadas não coincidem. Digite novamente.');
-        return;
-      }
-      if (password.length < 6) {
-        showError('A senha precisa ter no mínimo 6 caracteres.');
-        return;
-      }
-      if (!playlistUrl || !playlistUrl.startsWith('http')) {
-        showError('Insira o link oficial da sua lista M3U ou Xtream (começando com http:// ou https://).');
-        return;
-      }
-
-      btn.disabled = true;
-      btn.innerHTML = '<span>Criando conta e vinculando lista... ✨</span>';
-
-      try {
-        const res = await fetch(getApiUrl('/api/auth/register'), {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            email: email,
-            password: password,
-            playlistUrl: playlistUrl
-          })
-        });
-
-        const data = await res.json();
-        if (data.success) {
-          activeAccountEmail = email;
-          activeAccountCode = data.accountCode || 'ACC_BD24EFDF';
-          localStorage.setItem('iptv_mob_email', activeAccountEmail);
-          localStorage.setItem('iptv_mob_account_code', activeAccountCode);
-
-          await fetch(getApiUrl('/api/auth/pair/confirm'), {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              code: code,
-              email: email,
-              password: password
-            })
-          });
-          notifyCloudPairing(code, data);
-
-          document.getElementById('mainFormView').style.display = 'none';
-          document.getElementById('successView').style.display = 'block';
-
-          loadMobProfiles(activeAccountEmail, activeAccountCode);
-        } else {
-          showError(data.error || 'Falha ao criar conta. Tente outro e-mail.');
-          btn.disabled = false;
-          btn.innerHTML = '<span>CRIAR CONTA E CONECTAR TV ✨</span>';
-        }
-      } catch (err) {
-        showError('Falha de comunicação com o servidor. Verifique sua conexão Wi-Fi.');
-        btn.disabled = false;
-        btn.innerHTML = '<span>CRIAR CONTA E CONECTAR TV ✨</span>';
-      }
-    }
-  </script>
+  <script src="app.js?v=20261024_06"></script>
+  <script src="gamepad.js" defer></script>
+<div id="compatBridge" style="display:none !important;">
+  <div id="appToastNotification"></div>
+  <div id="badgeCountLive"></div>
+  <div id="badgeCountMovie"></div>
+  <div id="badgeCountSeries"></div>
+  <button id="browserLogoHomeBtn"></button>
+  <input type="text" id="browserSearchInput">
+  <button id="btnAddToFav"></button>
+  <button id="btnBackToSeriesList"></button>
+  <button id="btnClearBrowserSearch"></button>
+  <button id="btnDashAccount"></button>
+  <button id="btnDashCatchUp"></button>
+  <button id="btnDashFavorites"></button>
+  <button id="btnDashLogout"></button>
+  <button id="btnDashPlaylists"></button>
+  <button id="btnDashPower"></button>
+  <button id="btnDashRefresh"></button>
+  <button id="btnDashSearch"></button>
+  <button id="btnDashSettings"></button>
+  <button id="btnHeroExplore"></button>
+  <button id="btnHeroInfo"></button>
+  <button id="btnHeroPlay"></button>
+  <button id="btnHeroTrailer"></button>
+  <button id="btnManualTranslate"></button>
+  <button id="btnOpenAddPlaylistModal"></button>
+  <button id="btnPiP"></button>
+  <button id="btnQuickAspect"></button>
+  <button id="btnQuickFullscreen"></button>
+  <button id="btnReturnToDash"></button>
+  <button id="btnSwitchProfileBrowser"></button>
+  <button id="btnSwitchProfileDash"></button>
+  <button id="btnTranslateScreen"></button>
+  <button id="btnViewGrid"></button>
+  <button id="btnViewList"></button>
+  <div id="cardLiveTV"></div>
+  <div id="cardMovies"></div>
+  <div id="cardSeries"></div>
+  <input type="text" id="catSearchInput">
+  <div id="catalogHeroBanner"></div>
+  <div id="colEpisodesList"></div>
+  <div id="colItemsHeader"></div>
+  <div id="colSeasonChipsBar"></div>
+  <div id="dashContinueCarousel"></div>
+  <div id="dashContinueSection"></div>
+  <div id="dashCurrentPlaylist"></div>
+  <div id="dashExpirationDate"></div>
+  <button id="dashLogoBtn"></button>
+  <div id="dashSyncBadge"></div>
+  <div id="dashboardClock"></div>
+  <div id="dashboardDate"></div>
+  <div id="headerProfileAvatarBrowser"></div>
+  <div id="headerProfileAvatarDash"></div>
+  <div id="headerProfileNameBrowser"></div>
+  <div id="headerProfileNameDash"></div>
+  <div id="heroBannerBg"></div>
+  <div id="heroRating"></div>
+  <div id="heroSynopsis"></div>
+  <div id="heroSynopsisTranslatedText"></div>
+  <div id="heroSynopsisTranslationBox"></div>
+  <div id="heroTitle"></div>
+  <div id="heroYear"></div>
+  <input type="text" id="inputManualTranslate">
+  <div id="itemsCountBadge"></div>
+  <div id="itemsEmptyState"></div>
+  <div id="itemsLoadingSpinner"></div>
+  <div id="modalCastVal"></div>
+  <div id="modalDirectorVal"></div>
+  <div id="modalDuration"></div>
+  <div id="modalGenres"></div>
+  <div id="modalMainTitle"></div>
+  <div id="modalRating"></div>
+  <div id="modalSynopsis"></div>
+  <div id="modalYear"></div>
+  <div id="noPlaylistBanner"></div>
+  <div id="seriesSubTitle"></div>
+  <div id="standardItemsWrap"></div>
+</div>
 </body>
 </html>

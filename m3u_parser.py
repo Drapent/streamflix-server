@@ -213,8 +213,141 @@ def parse_m3u_file(filepath: str) -> list:
 
     return parse_m3u_content(decompressed.decode("utf-8", errors="ignore"))
 
+def extract_xtream_credentials(url: str):
+    """Extrai (base_url, username, password) de URLs Xtream padrao ou curtas (/ts/user/pass)."""
+    if not url:
+        return None
+    u = url.strip()
+    m_q = re.search(r'^(https?://[^/?#]+).*?[?&]username=([^&#]+).*?[?&]password=([^&#]+)', u, re.IGNORECASE)
+    if m_q:
+        return m_q.group(1), m_q.group(2), m_q.group(3)
+    m_p = re.search(r'^(https?://[^/?#]+)/(?:ts|m3u|m3u8|hls|plus|live)/([^/?#]+)/([^/?#]+)', u, re.IGNORECASE)
+    if m_p:
+        return m_p.group(1), m_p.group(2), m_p.group(3)
+    m_d = re.search(r'^(https?://[^/?#]+)/([a-zA-Z0-9_.\-]+)/([a-zA-Z0-9_.\-]+)$', u)
+    if m_d and not m_d.group(2).endswith(('.m3u', '.m3u8', '.php', '.ts')):
+        return m_d.group(1), m_d.group(2), m_d.group(3)
+    return None
+
+
+def fetch_xtream_api_channels(base_url: str, username: str, password: str, timeout: int = 25) -> list:
+    """Busca Canais ao Vivo, Filmes e Series diretamente via Xtream Player API."""
+    import json
+    headers = {
+        "User-Agent": "IPTVSmarters/1.0.0 (Linux; Android 10; SM-G988B)",
+        "Accept": "application/json, */*"
+    }
+
+    def get_json(action: str):
+        api_u = f"{base_url}/player_api.php?username={username}&password={password}&action={action}"
+        req = urllib.request.Request(api_u, headers=headers)
+        with urllib.request.urlopen(req, timeout=timeout, context=SSL_CONTEXT) as resp:
+            raw = decompress_data(resp.read())
+            return json.loads(raw.decode("utf-8", errors="ignore"))
+
+    channels = []
+    idx = 1
+    try:
+        cat_names = {}
+        for c_act in ("get_live_categories", "get_vod_categories", "get_series_categories"):
+            try:
+                cats = get_json(c_act)
+                if isinstance(cats, list):
+                    for c in cats:
+                        cid = str(c.get("category_id", ""))
+                        cname = str(c.get("category_name", "Geral")).strip()
+                        if cid and cname:
+                            cat_names[f"{c_act}_{cid}"] = cname
+            except Exception:
+                pass
+
+        try:
+            lives = get_json("get_live_streams")
+            if isinstance(lives, list):
+                for item in lives:
+                    sid = item.get("stream_id")
+                    if not sid:
+                        continue
+                    cid = str(item.get("category_id", ""))
+                    grp = cat_names.get(f"get_live_categories_{cid}", "Canais ao Vivo")
+                    name = str(item.get("name") or f"Canal {idx}").strip()
+                    logo = str(item.get("stream_icon") or "").strip()
+                    stream_u = f"{base_url}/live/{username}/{password}/{sid}.ts"
+                    channels.append({
+                        "id": str(sid),
+                        "name": name,
+                        "logo": logo,
+                        "group": grp,
+                        "subgroup": clean_subcategory_name(grp, "live"),
+                        "type": "live",
+                        "tvg_id": str(item.get("epg_channel_id") or ""),
+                        "url": stream_u
+                    })
+                    idx += 1
+        except Exception:
+            pass
+
+        try:
+            vods = get_json("get_vod_streams")
+            if isinstance(vods, list):
+                for item in vods:
+                    sid = item.get("stream_id")
+                    if not sid:
+                        continue
+                    cid = str(item.get("category_id", ""))
+                    grp = cat_names.get(f"get_vod_categories_{cid}", "Filmes")
+                    name = str(item.get("name") or f"Filme {idx}").strip()
+                    logo = str(item.get("stream_icon") or item.get("cover") or "").strip()
+                    ext = str(item.get("container_extension") or "mp4").strip()
+                    stream_u = f"{base_url}/movie/{username}/{password}/{sid}.{ext}"
+                    channels.append({
+                        "id": str(sid),
+                        "name": name,
+                        "logo": logo,
+                        "group": grp,
+                        "subgroup": clean_subcategory_name(grp, "movie"),
+                        "type": "movie",
+                        "tvg_id": "",
+                        "url": stream_u
+                    })
+                    idx += 1
+        except Exception:
+            pass
+
+        try:
+            series_list = get_json("get_series")
+            if isinstance(series_list, list):
+                for item in series_list:
+                    sid = item.get("series_id")
+                    if not sid:
+                        continue
+                    cid = str(item.get("category_id", ""))
+                    grp = cat_names.get(f"get_series_categories_{cid}", "Séries")
+                    name = str(item.get("name") or f"Série {idx}").strip()
+                    logo = str(item.get("cover") or "").strip()
+                    stream_u = f"{base_url}/series/{username}/{password}/{sid}.mp4"
+                    channels.append({
+                        "id": str(sid),
+                        "series_id": str(sid),
+                        "name": f"{name} S01E01",
+                        "logo": logo,
+                        "group": grp,
+                        "subgroup": clean_subcategory_name(grp, "series"),
+                        "type": "series",
+                        "tvg_id": "",
+                        "url": stream_u
+                    })
+                    idx += 1
+        except Exception:
+            pass
+    except Exception as e:
+        print(f"[Xtream API Fallback Notice] {e}")
+
+    return channels
+
+
 def parse_m3u_url(url: str, timeout: int = 60) -> list:
-    """Downloads and parses an M3U playlist from a remote URL."""
+    """Downloads and parses an M3U playlist or Xtream link from a remote URL."""
     headers = {
         "User-Agent": "IPTVSmarters/1.0.0 (Linux; Android 10; SM-G988B)",
         "Accept": "*/*",
@@ -222,29 +355,49 @@ def parse_m3u_url(url: str, timeout: int = 60) -> list:
         "Connection": "keep-alive"
     }
 
-    req = urllib.request.Request(url, headers=headers)
+    creds = extract_xtream_credentials(url)
+    if "player_api.php" in url.lower() and creds:
+        ch_api = fetch_xtream_api_channels(creds[0], creds[1], creds[2], timeout=min(timeout, 30))
+        if ch_api:
+            return ch_api
+
+    raw_data = None
     try:
+        req = urllib.request.Request(url, headers=headers)
         with urllib.request.urlopen(req, timeout=timeout, context=SSL_CONTEXT) as response:
             raw_data = response.read()
     except urllib.error.HTTPError as e:
         if e.code in (401, 403):
-            headers["User-Agent"] = "VLC/3.0.18 LibVLC/3.0.18"
-            req2 = urllib.request.Request(url, headers=headers)
-            with urllib.request.urlopen(req2, timeout=timeout, context=SSL_CONTEXT) as response2:
-                raw_data = response2.read()
-        else:
+            try:
+                headers["User-Agent"] = "VLC/3.0.18 LibVLC/3.0.18"
+                req2 = urllib.request.Request(url, headers=headers)
+                with urllib.request.urlopen(req2, timeout=timeout, context=SSL_CONTEXT) as response2:
+                    raw_data = response2.read()
+            except Exception:
+                pass
+        elif not creds:
+            raise e
+    except Exception as e:
+        if not creds:
             raise e
 
-    decompressed = decompress_data(raw_data)
+    channels = []
+    if raw_data:
+        decompressed = decompress_data(raw_data)
+        for encoding in ("utf-8", "utf-8-sig", "latin-1", "cp1252"):
+            try:
+                content = decompressed.decode(encoding)
+                channels = parse_m3u_content(content)
+                break
+            except UnicodeDecodeError:
+                continue
+        if not channels:
+            channels = parse_m3u_content(decompressed.decode("utf-8", errors="ignore"))
 
-    for encoding in ("utf-8", "utf-8-sig", "latin-1", "cp1252"):
-        try:
-            content = decompressed.decode(encoding)
-            return parse_m3u_content(content)
-        except UnicodeDecodeError:
-            continue
+    if not channels and creds:
+        channels = fetch_xtream_api_channels(creds[0], creds[1], creds[2], timeout=min(timeout, 30))
 
-    return parse_m3u_content(decompressed.decode("utf-8", errors="ignore"))
+    return channels
 
 def get_grouped_categories(channels: list, series_map: dict = None) -> dict:
     """Returns counts by main section ('live', 'movie', 'series') and subcategories under each."""

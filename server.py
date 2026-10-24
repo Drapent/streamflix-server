@@ -1,4 +1,4 @@
-"""
+﻿"""
 Local HTTP Server and REST API for IPTV Desktop
 Provides persistent playlist storage, instant startup caching,
 smart categorization (Live TV / Movies / Series),
@@ -7,6 +7,7 @@ dedicated Series -> Seasons -> Episodes grouping, and high-speed streaming.
 
 import http.server
 import socketserver
+import socket
 import json
 import os
 import time
@@ -22,7 +23,6 @@ from pathlib import Path
 import m3u_parser
 import stream_proxy
 import sync_hub
-import database
 from catalog_guardian import guardian
 
 BASE_DIR = Path(__file__).resolve().parent
@@ -423,55 +423,57 @@ def _is_placeholder_title(value):
     return str(value or "").strip().lower() in _PLACEHOLDER_TITLES
 
 def resolve_progress_titles(items):
-    """Preenche títulos 'Sem Título'/'None' consultando o catálogo pela URL do stream.
-
-    Usa um cache em memória para que a varredura do catálogo aconteça no máximo
-    uma vez por URL, mantendo o carregamento da Home instantâneo.
-    """
+    """Preenche títulos, URLs de stream e pôsteres consultando o catálogo.
+    Garante que itens assistidos no Desktop ou Mobile tenham streamUrl e imagem na TV."""
     if not items:
         return items
 
-    def _url_of(it):
-        return it.get("streamUrl") or it.get("url") or it.get("contentId") or ""
-
-    # 1) Descobre quais URLs ainda precisam ser resolvidas
-    wanted = set()
     for it in items:
-        if _is_placeholder_title(it.get("title")):
-            u = _url_of(it)
-            if u and u not in _PROGRESS_TITLE_CACHE:
-                wanted.add(u)
+        cid = str(it.get("contentId") or "").strip()
+        stream_u = it.get("streamUrl") or it.get("url") or ""
+        curr_title = it.get("title") or ""
+        needs_stream = not stream_u
+        needs_poster = not it.get("poster")
+        needs_title = _is_placeholder_title(curr_title)
 
-    # 2) Uma única passada no catálogo resolve todas as URLs pendentes
-    if wanted:
-        found = {}
-        for ch in CURRENT_CHANNELS:
-            u = ch.get("url")
-            if u in wanted:
-                found[u] = ch
-                if len(found) == len(wanted):
-                    break
-        for u in wanted:
-            _PROGRESS_TITLE_CACHE[u] = (found.get(u) or {}).get("name", "")
+        if needs_stream or needs_poster or needs_title:
+            found_ch = None
+            if stream_u:
+                for ch in CURRENT_CHANNELS:
+                    if ch.get("url") == stream_u:
+                        found_ch = ch
+                        break
+            if not found_ch and cid:
+                for ch in CURRENT_CHANNELS:
+                    if str(ch.get("id")) == cid or ch.get("url") == cid:
+                        found_ch = ch
+                        break
+            if not found_ch and curr_title and not needs_title:
+                clean_t = curr_title.lower().strip()
+                for ch in CURRENT_CHANNELS:
+                    if ch.get("name", "").lower().strip() == clean_t:
+                        found_ch = ch
+                        break
 
-    # 3) Aplica os títulos resolvidos em uma cópia limpa do item
-    for it in items:
-        if not _is_placeholder_title(it.get("title")):
-            continue
-        resolved = _PROGRESS_TITLE_CACHE.get(_url_of(it), "")
-        if not resolved:
-            it["title"] = "Continue assistindo"
-            continue
-        m = m3u_parser.SEASON_EP_REGEX.match(resolved.strip())
-        if m:
-            series_title = m.group(1).strip()
-            it["title"] = series_title
-            it["seriesTitle"] = series_title
-            it["season"] = int(m.group(2) or m.group(3) or m.group(4) or 1)
-            it["episode"] = int(m.group(5) or m.group(6) or m.group(7) or m.group(8) or 1)
-            it["type"] = "series"
-        else:
-            it["title"] = resolved
+            if found_ch:
+                if needs_stream:
+                    it["streamUrl"] = found_ch.get("url", "")
+                    it["url"] = found_ch.get("url", "")
+                if needs_poster and found_ch.get("logo"):
+                    it["poster"] = found_ch.get("logo")
+                if needs_title and found_ch.get("name"):
+                    resolved = found_ch.get("name")
+                    m = m3u_parser.SEASON_EP_REGEX.match(resolved.strip())
+                    if m:
+                        series_title = m.group(1).strip()
+                        it["title"] = series_title
+                        it["seriesTitle"] = series_title
+                        it["season"] = int(m.group(2) or m.group(3) or m.group(4) or 1)
+                        it["episode"] = int(m.group(5) or m.group(6) or m.group(7) or m.group(8) or 1)
+                        it["type"] = "series"
+                    else:
+                        it["title"] = resolved
+
     return items
 
 def _progress_display_title(item):
@@ -489,65 +491,88 @@ def _progress_display_title(item):
                 title = f"{title}{suffix}"
     return title
 
+def ensure_account_playlist_loaded(account_code="PADRAO"):
+    global CURRENT_CHANNELS, CURRENT_PLAYLIST_NAME, CURRENT_PLAYLIST_META, CURRENT_GROUPED_CATEGORIES
+    if CURRENT_CHANNELS:
+        return
+    if not account_code or account_code == "PADRAO":
+        return
+    try:
+        u = sync_hub.database.get_user_by_account_code(account_code)
+        if not u:
+            sdata = sync_hub.load_sync_data()
+            for acc in (sdata.get("accounts") or {}).values():
+                if acc.get("accountCode") == account_code:
+                    u = acc
+                    break
+        if u:
+            purl = (u.get("playlist_url") or u.get("playlistUrl") or "").strip()
+            email = u.get("email", "")
+            if purl and purl.startswith("http"):
+                print(f"[AutoLoad Playlist] Carregando lista da conta {account_code} ({email})...")
+                channels = m3u_parser.parse_m3u_url(purl)
+                if channels:
+                    name = f"Lista de {email.split('@')[0]}" if email else "Minha Lista"
+                    save_playlist_cache(channels, name, {"url": purl, "email": email, "type": "url"})
+    except Exception as e:
+        print(f"[AutoLoad Playlist Notice] {e}")
+
 def get_netflix_home_data(account_code="PADRAO", profile_id="p1", data_saver=False):
+    ensure_account_playlist_loaded(account_code)
     rows = []
     prog_res = sync_hub.get_progress(account_code, profile_id)
     continue_items = prog_res.get("items", []) if isinstance(prog_res, dict) else (prog_res or [])
     resolve_progress_titles(continue_items)
-    hero_item = None
-
-    if continue_items:
-        first = continue_items[0]
-        hero_item = {
-            "id": first.get("contentId"),
-            "title": _progress_display_title(first),
-            "seriesTitle": first.get("seriesTitle"),
-            "season": first.get("season"),
-            "episode": first.get("episode"),
-            "type": first.get("type", "movie"),
-            "poster": first.get("poster"),
-            "backdrop": first.get("poster") if not data_saver else "",
-            "plot": "Retome de onde você parou com a experiência completa de streaming.",
-            "streamUrl": first.get("streamUrl"),
-            "positionMs": first.get("positionMs", 0),
-            "durationMs": first.get("durationMs", 0),
-            "progressPercent": first.get("progressPercent", 0),
-            "rating": "9.2",
-            "year": "2025"
-        }
 
     top_movies = [ch for ch in CURRENT_CHANNELS if ch.get("type") == "movie"]
     top_live = [ch for ch in CURRENT_CHANNELS if ch.get("type") == "live"]
 
-    if not hero_item and top_movies:
-        m = top_movies[0]
+    # Billboard Hero: Use real top movie or series from playlist if available!
+    hero_item = None
+    if top_movies:
+        for m in top_movies:
+            logo = m.get("logo") or m.get("poster")
+            if logo and "http" in logo:
+                hero_item = {
+                    "id": m.get("id"),
+                    "title": m.get("name"),
+                    "name": m.get("name"),
+                    "type": "movie",
+                    "poster": logo,
+                    "backdrop": logo,
+                    "genre": m.get("group") or "FILMES • VOD",
+                    "plot": "Disponível em alta definição no catálogo Streamflix.",
+                    "overview": "Disponível em alta definição no catálogo Streamflix.",
+                    "rating": "9.0",
+                    "year": "2024",
+                    "quality": "4K ULTRA HD",
+                    "age": "14+",
+                    "isTop10": True,
+                    "streamUrl": m.get("url", ""),
+                    "url": m.get("url", "")
+                }
+                break
+    if not hero_item and CURRENT_SERIES_MAP:
+        first_s = next(iter(CURRENT_SERIES_MAP.values()))
         hero_item = {
-            "id": m.get("id"),
-            "title": m.get("name"),
-            "type": "movie",
-            "poster": m.get("logo"),
-            "backdrop": m.get("logo") if not data_saver else "",
-            "plot": "Um dos filmes mais aclamados da atualidade. Assista agora em 4K Ultra HD com som cristalino.",
-            "streamUrl": m.get("url"),
-            "rating": "9.4",
-            "year": "2025"
-        }
-    elif not hero_item and CURRENT_SERIES_MAP:
-        s_title = next(iter(CURRENT_SERIES_MAP))
-        s_data = CURRENT_SERIES_MAP[s_title]
-        hero_item = {
-            "id": s_title,
-            "title": s_title,
+            "id": first_s.get("id") or first_s.get("title"),
+            "title": first_s.get("title"),
+            "name": first_s.get("title"),
             "type": "series",
-            "poster": s_data.get("logo"),
-            "backdrop": s_data.get("logo") if not data_saver else "",
-            "plot": f"Série premiada com {s_data.get('seasons_count', 1)} temporadas e {s_data.get('episodes_count', 1)} episódios imperdíveis.",
-            "streamUrl": "",
-            "rating": "9.1",
-            "year": "2025"
+            "poster": first_s.get("logo") or "",
+            "backdrop": first_s.get("logo") or "",
+            "genre": first_s.get("group") or "SÉRIES",
+            "plot": "Disponível em alta definição na sua lista de reprodução.",
+            "overview": "Disponível em alta definição na sua lista de reprodução.",
+            "rating": "9.0",
+            "year": "2024",
+            "quality": "FULL HD",
+            "age": "14+",
+            "isTop10": True,
+            "streamUrl": ""
         }
 
-    # 1. Continuar Assistindo (Wide cards with progress bar)
+    # 1. Continuar assistindo (SOMENTE ITENS REAIS - ZERO ITENS FALSOS)
     norm_continue = []
     for it in continue_items:
         p_ms = it.get("positionMs", 0)
@@ -556,6 +581,8 @@ def get_netflix_home_data(account_code="PADRAO", profile_id="p1", data_saver=Fal
         rem_min = max(1, round((d_ms - p_ms) / 60000)) if d_ms > p_ms else 1
         s_title = it.get("seriesTitle")
         ep_lbl = f"T{it.get('season') or 1}:E{it.get('episode') or 1}" if it.get("type") == "series" else "Filme"
+        poster_url = it.get("poster") or it.get("logo") or ""
+        stream_u = it.get("streamUrl") or it.get("url") or ""
         norm_continue.append({
             "id": it.get("contentId") or it.get("id"),
             "title": _progress_display_title(it),
@@ -564,10 +591,10 @@ def get_netflix_home_data(account_code="PADRAO", profile_id="p1", data_saver=Fal
             "episode": it.get("episode"),
             "episodeTitle": ep_lbl,
             "type": it.get("type", "movie"),
-            "poster": it.get("poster"),
-            "backdrop": it.get("poster") if not data_saver else "",
-            "streamUrl": it.get("streamUrl") or it.get("url"),
-            "url": it.get("streamUrl") or it.get("url"),
+            "poster": poster_url,
+            "backdrop": poster_url if not data_saver else "",
+            "streamUrl": stream_u,
+            "url": stream_u,
             "positionMs": p_ms,
             "durationMs": d_ms,
             "position": p_ms / 1000 if p_ms else 0,
@@ -577,16 +604,97 @@ def get_netflix_home_data(account_code="PADRAO", profile_id="p1", data_saver=Fal
             "remaining": f"Faltam {rem_min} min" if d_ms > 0 else "Assistindo"
         })
 
+    # Adiciona "Continuar assistindo" APENAS se houver histórico real do usuário!
     if norm_continue:
         rows.append({
             "id": "row_continue",
-            "title": "Continuar Assistindo",
+            "title": "Continuar assistindo",
             "type": "continue",
             "isWide": True,
-            "items": norm_continue
+            "items": norm_continue[:15]
         })
 
-    # 2. TV ao Vivo Agora & Guia EPG (Cards 16:9 com programa em andamento e barra de tempo)
+    # 2. Em alta agora (Itens reais do catálogo de séries e filmes)
+    trending_items = []
+    series_keys = list(CURRENT_SERIES_MAP.keys())
+    for s_k in series_keys[:12]:
+        s_obj = CURRENT_SERIES_MAP[s_k]
+        logo_url = s_obj.get("logo") or ""
+        trending_items.append({
+            "id": s_obj.get("id") or s_k,
+            "title": s_k,
+            "name": s_k,
+            "type": "series",
+            "poster": logo_url,
+            "logo": logo_url,
+            "seasons_count": s_obj.get("seasons_count", 1),
+            "episodes_count": s_obj.get("episodes_count", 1),
+            "rating": "9.1",
+            "isTop10": True
+        })
+
+    for m in top_movies[:12]:
+        logo_url = m.get("logo") or m.get("poster") or ""
+        trending_items.append({
+            "id": m.get("id"),
+            "title": m.get("name"),
+            "name": m.get("name"),
+            "type": "movie",
+            "poster": logo_url,
+            "logo": logo_url,
+            "url": m.get("url"),
+            "streamUrl": m.get("url"),
+            "rating": "9.0",
+            "isTop10": True
+        })
+
+    if trending_items:
+        rows.append({
+            "id": "row_trending",
+            "title": "Em alta agora",
+            "type": "poster",
+            "items": trending_items
+        })
+
+    # 3. Animes em Alta & Sucessos (Itens reais do catálogo)
+    anime_items = []
+    for s_title, s_data in CURRENT_SERIES_MAP.items():
+        grp = (s_data.get("group", "") + " " + s_data.get("subgroup", "")).lower()
+        if ("anime" in grp or "donghua" in grp) and len(anime_items) < 24:
+            anime_items.append({
+                "id": s_data.get("id") or s_title,
+                "title": s_title,
+                "name": s_title,
+                "type": "series",
+                "poster": s_data.get("logo") or "",
+                "logo": s_data.get("logo"),
+                "seasons_count": s_data.get("seasons_count", 1),
+                "episodes_count": s_data.get("episodes_count", 1),
+                "rating": "9.3"
+            })
+    for m in top_movies:
+        grp = (m.get("group", "") + " " + m.get("subgroup", "")).lower()
+        if "anime" in grp and len(anime_items) < 24:
+            anime_items.append({
+                "id": m.get("id"),
+                "title": m.get("name"),
+                "name": m.get("name"),
+                "type": "movie",
+                "poster": m.get("logo") or "",
+                "logo": m.get("logo"),
+                "url": m.get("url"),
+                "streamUrl": m.get("url"),
+                "rating": "9.1"
+            })
+    if anime_items:
+        rows.append({
+            "id": "row_animes_home",
+            "title": "Animes em Alta & Sucessos",
+            "type": "poster",
+            "items": anime_items
+        })
+
+    # 4. TV ao Vivo & Canais de Esportes
     if top_live:
         limit_live = 12 if data_saver else 24
         now = datetime.now()
@@ -598,6 +706,7 @@ def get_netflix_home_data(account_code="PADRAO", profile_id="p1", data_saver=Fal
                 "title": ch.get("name"),
                 "name": ch.get("name"),
                 "type": "live",
+                "poster": ch.get("logo") or "",
                 "logo": ch.get("logo"),
                 "url": ch.get("url"),
                 "group": ch.get("group", "TV"),
@@ -606,90 +715,44 @@ def get_netflix_home_data(account_code="PADRAO", profile_id="p1", data_saver=Fal
             })
         rows.append({
             "id": "row_live",
-            "title": "TV ao Vivo Agora & Guia de Programação",
+            "title": "Canais de TV ao Vivo & Esportes",
             "type": "live",
             "isLive": True,
             "isWide": True,
             "items": live_cards
         })
 
-    # 3. Em Alta / Top 10 Hoje
-    series_keys = list(CURRENT_SERIES_MAP.keys())
-    trending_items = []
-    limit_trend = 6 if data_saver else 12
-    for s_k in series_keys[:limit_trend]:
-        s_obj = CURRENT_SERIES_MAP[s_k]
-        trending_items.append({
-            "id": s_k,
-            "title": s_k,
-            "type": "series",
-            "logo": s_obj.get("logo"),
-            "seasons_count": s_obj.get("seasons_count", 1),
-            "episodes_count": s_obj.get("episodes_count", 1),
-            "rating": "9.5",
-            "isTop10": True
-        })
-    for m in top_movies[:limit_trend]:
-        trending_items.append({
-            "id": m.get("id"),
-            "title": m.get("name"),
-            "type": "movie",
-            "logo": m.get("logo"),
-            "url": m.get("url"),
-            "rating": "9.3",
-            "isTop10": True
-        })
-
-    if trending_items:
+    # 5. Filmes de Sucesso
+    if top_movies:
+        limit_m = 12 if data_saver else 24
         rows.append({
-            "id": "row_trending",
-            "title": "Top 10 Hoje & Em Alta",
+            "id": "row_movies",
+            "title": "Filmes de Sucesso",
             "type": "poster",
-            "items": trending_items
-        })
-
-    # 4. Recomendados para Você (Prime Style)
-    recommended_items = []
-    if len(top_movies) > 12:
-        for m in top_movies[12:24]:
-            recommended_items.append({
+            "items": [{
                 "id": m.get("id"),
                 "title": m.get("name"),
+                "name": m.get("name"),
                 "type": "movie",
+                "poster": m.get("logo") or "",
                 "logo": m.get("logo"),
                 "url": m.get("url"),
-                "rating": "9.0"
-            })
-    if len(series_keys) > 12:
-        for s_k in series_keys[12:24]:
-            s_obj = CURRENT_SERIES_MAP[s_k]
-            recommended_items.append({
-                "id": s_k,
-                "title": s_k,
-                "type": "series",
-                "logo": s_obj.get("logo"),
-                "seasons_count": s_obj.get("seasons_count", 1),
-                "episodes_count": s_obj.get("episodes_count", 1),
-                "rating": "9.1"
-            })
-    if recommended_items:
-        rows.append({
-            "id": "row_recommended",
-            "title": "Recomendados para Você",
-            "type": "poster",
-            "items": recommended_items
+                "rating": "8.8"
+            } for m in top_movies[12:12+limit_m]]
         })
 
-    # 5. Séries Populares
+    # 6. Séries Populares
     if series_keys:
         popular_series = []
         limit_s = 12 if data_saver else 24
-        for s_k in series_keys[:limit_s]:
+        for s_k in series_keys[12:12+limit_s]:
             s_obj = CURRENT_SERIES_MAP[s_k]
             popular_series.append({
                 "id": s_k,
                 "title": s_k,
+                "name": s_k,
                 "type": "series",
+                "poster": s_obj.get("logo") or "",
                 "logo": s_obj.get("logo"),
                 "seasons_count": s_obj.get("seasons_count", 1),
                 "episodes_count": s_obj.get("episodes_count", 1),
@@ -700,23 +763,6 @@ def get_netflix_home_data(account_code="PADRAO", profile_id="p1", data_saver=Fal
             "title": "Séries Populares",
             "type": "poster",
             "items": popular_series
-        })
-
-    # 6. Filmes de Sucesso
-    if top_movies:
-        limit_m = 12 if data_saver else 24
-        rows.append({
-            "id": "row_movies",
-            "title": "Filmes de Sucesso",
-            "type": "poster",
-            "items": [{
-                "id": m.get("id"),
-                "title": m.get("name"),
-                "type": "movie",
-                "logo": m.get("logo"),
-                "url": m.get("url"),
-                "rating": "8.7"
-            } for m in top_movies[12:12+limit_m]]
         })
 
     # 7. Dedicated Row: Universo Disney+ & Marvel (Séries)
@@ -734,6 +780,7 @@ def get_netflix_home_data(account_code="PADRAO", profile_id="p1", data_saver=Fal
                 "title": s.get("title"),
                 "name": s.get("title"),
                 "type": "series",
+                "poster": s.get("logo") or "",
                 "logo": s.get("logo"),
                 "seasons_count": s.get("seasons_count", 1),
                 "episodes_count": s.get("episodes_count", 1),
@@ -756,6 +803,7 @@ def get_netflix_home_data(account_code="PADRAO", profile_id="p1", data_saver=Fal
                 "title": m.get("name"),
                 "name": m.get("name"),
                 "type": "movie",
+                "poster": m.get("logo") or "",
                 "logo": m.get("logo"),
                 "url": m.get("url"),
                 "rating": "9.1"
@@ -813,27 +861,6 @@ def load_initial_channels():
                     return
                 except Exception as be:
                     print(f"[Aviso] Falha ao ler backup: {be}")
-
-    # 2. Try loading from saved_meta.json URL (for Cloud / Render deployment)
-    if SAVED_META_FILE.exists() and not SAVED_CACHE_FILE.exists():
-        try:
-            with open(SAVED_META_FILE, 'r', encoding='utf-8') as f:
-                meta = json.load(f)
-            url = meta.get('url')
-            if url and str(url).startswith('http'):
-                def _bg_cloud_init():
-                    global CURRENT_CHANNELS, CURRENT_PLAYLIST_NAME, CURRENT_PLAYLIST_META
-                    try:
-                        print(f'[Cloud Render] Baixando catálogo inicial em background: {url[:50]}...')
-                        channels = m3u_parser.parse_m3u_url(url, timeout=60)
-                        if channels:
-                            save_playlist_cache(channels, meta.get('name', 'Lista Principal'), meta)
-                            print(f'[Cloud Render] Catálogo carregado com {len(channels):,} canais/filmes!')
-                    except Exception as err:
-                        print(f'[Cloud Render] Erro ao carregar catálogo em background: {err}')
-                threading.Thread(target=_bg_cloud_init, daemon=True).start()
-        except Exception as e:
-            print(f'[Aviso] Falha ao processar meta para cloud load: {e}')
 
     # 2. Try loading from saved M3U file
     if SAVED_M3U_FILE.exists():
@@ -1701,61 +1728,12 @@ class IPTVServerHandler(http.server.SimpleHTTPRequestHandler):
             path = parsed.path
             query = urllib.parse.parse_qs(parsed.query)
 
-            # Database Administration Dashboard & APIs
-            if path in ("/database", "/database/"):
-                db_html = STATIC_DIR / "database.html"
-                if db_html.exists():
-                    with open(db_html, "rb") as f:
-                        content = f.read()
-                    self.send_response(200)
-                    self.send_header("Content-Type", "text/html; charset=utf-8")
-                    self.send_header("Content-Length", str(len(content)))
-                    self.send_header("Access-Control-Allow-Origin", "*")
-                    self.end_headers()
-                    self.wfile.write(content)
-                    return
-                else:
-                    self.send_json({"error": "Painel do banco de dados não encontrado."}, 404)
-                    return
-
-            if path == "/api/database/stats":
-                self.send_json(database.get_db_stats())
-                return
-
-            if path == "/api/database/users":
-                self.send_json({"success": True, "users": database.get_all_users()})
-                return
-
-            if path == "/api/database/profiles":
-                self.send_json({"success": True, "profiles": database.get_all_profiles()})
-                return
-
-            if path == "/api/database/progress":
-                self.send_json({"success": True, "progress": database.get_recent_progress()})
-                return
-
-            if path == "/api/database/integrity":
-                self.send_json({"success": True, "integrity": database.check_integrity()})
-                return
-
-            if path == "/api/database/backup":
-                backup_data = database.export_backup_json()
-                data_bytes = json.dumps(backup_data, indent=2, ensure_ascii=False).encode("utf-8")
-                self.send_response(200)
-                self.send_header("Content-Type", "application/json; charset=utf-8")
-                self.send_header("Content-Disposition", 'attachment; filename="streamflix_database_backup.json"')
-                self.send_header("Content-Length", str(len(data_bytes)))
-                self.send_header("Access-Control-Allow-Origin", "*")
-                self.end_headers()
-                self.wfile.write(data_bytes)
-                return
-
             # API: Version & Auto-Update Check
             if path == "/api/version":
                 self.send_json({
-                    "versionCode": 3,
-                    "versionName": "2.2.0",
-                    "releaseNotes": "Sincronização instantânea de perfis e histórico, botão Sincronizar na tela de perfis, novo design de logos e isolamento total por conta.",
+                    "versionCode": 7,
+                    "versionName": "3.2.0 (Sincronização 100% Real)",
+                    "releaseNotes": "Novo visual 100% fiel ao Streamflix Pro: Tela de autenticação 3 colunas, painel de navegação com Início azul elétrico, catálogo completo de animes indexados, esportes, infantil e billboard 4K.",
                     "apkTvUrl": "/IPTV_TV.apk",
                     "apkMobileUrl": "/IPTV_Player.apk",
                     "wgtUrl": "/IPTV_Samsung_TV.wgt",
@@ -2111,10 +2089,187 @@ class IPTVServerHandler(http.server.SimpleHTTPRequestHandler):
                                 "seasons": s.get("seasons_count", 1)
                             })
 
-                elif item_type in ("trending", "bombando"):
-                    movies = [c for c in CURRENT_CHANNELS if c.get("type") == "movie"][:60]
-                    series = list(CURRENT_SERIES_MAP.values())[:60]
+                elif item_type in ("animes", "anime"):
+                    anime_keywords = [
+                        'anime', 'animes', 'donghua', 'donghuas', 'desenho', 'desenhos',
+                        'naruto', 'one piece', 'dragon ball', 'bleach', 'jujutsu', 'demon slayer',
+                        'kimetsu', 'attack on titan', 'shingeki', 'solo leveling', 'chainsaw man',
+                        'boku no hero', 'my hero academia', 'death note', 'hunter x hunter',
+                        'pokemon', 'digimon', 'cavaleiros', 'saint seiya', 'fairy tail',
+                        'sword art online', 'tokyo ghoul', 'black clover', 'boruto', 'fullmetal'
+                    ]
+                    categories = ["Todos", "Séries de Anime", "Filmes de Anime", "Animes 24h Ao Vivo", "Ação & Shonen", "Aventura & Fantasia"]
+
+                    curated_animes = [
+                        {"id": "an_cur_1", "name": "Demon Slayer: Kimetsu no Yaiba", "title": "Demon Slayer: Kimetsu no Yaiba", "type": "series", "poster": "https://image.tmdb.org/t/p/w500/xUfRZu2mi8jH6SzQEJGP6tjBuYj.jpg", "backdrop": "https://image.tmdb.org/t/p/original/nTvM4mhqZlHIvUkIvd6vv79QOqv.jpg", "rating": "9.6", "year": "2024", "category": "Séries de Anime", "group": "Séries de Anime", "seasons": 4, "episodes_count": 55},
+                        {"id": "an_cur_2", "name": "Jujutsu Kaisen", "title": "Jujutsu Kaisen", "type": "series", "poster": "https://image.tmdb.org/t/p/w500/hFWP5HkbVEe40hrXgtCeKpndHG2.jpg", "backdrop": "https://image.tmdb.org/t/p/original/gmECkdDc79OPvEBVkGIaSAE6mhn.jpg", "rating": "9.5", "year": "2024", "category": "Séries de Anime", "group": "Séries de Anime", "seasons": 2, "episodes_count": 47},
+                        {"id": "an_cur_3", "name": "One Piece", "title": "One Piece", "type": "series", "poster": "https://image.tmdb.org/t/p/w500/49WJfeN0moxb9IPfGn8AIqMGskD.jpg", "backdrop": "https://image.tmdb.org/t/p/original/2rmK7mnchw9Xr3XdiTFSxTT0Yqi.jpg", "rating": "9.4", "year": "2024", "category": "Séries de Anime", "group": "Séries de Anime", "seasons": 21, "episodes_count": 1100},
+                        {"id": "an_cur_4", "name": "Solo Leveling", "title": "Solo Leveling", "type": "series", "poster": "https://image.tmdb.org/t/p/w500/geCRueV3ElhRTr0xtJuPxJ8ZXq5.jpg", "backdrop": "https://image.tmdb.org/t/p/original/4MCKNAc6AbWjEsM2crOPtRISEJ0.jpg", "rating": "9.3", "year": "2024", "category": "Séries de Anime", "group": "Séries de Anime", "seasons": 1, "episodes_count": 12},
+                        {"id": "an_cur_5", "name": "Attack on Titan (Shingeki no Kyojin)", "title": "Attack on Titan (Shingeki no Kyojin)", "type": "series", "poster": "https://image.tmdb.org/t/p/w500/hTP1DtLGFamjfu8WqjnuQdP1n4i.jpg", "backdrop": "https://image.tmdb.org/t/p/original/i34ijWVsBZy5vqiWcMsmJ5Q6w0A.jpg", "rating": "9.7", "year": "2023", "category": "Séries de Anime", "group": "Séries de Anime", "seasons": 4, "episodes_count": 89},
+                        {"id": "an_cur_6", "name": "Chainsaw Man", "title": "Chainsaw Man", "type": "series", "poster": "https://image.tmdb.org/t/p/w500/npdB6eFz44XZ55vgR9IIJRMy4Ya.jpg", "backdrop": "https://image.tmdb.org/t/p/original/tprL2mGk7xGvD43h9pQnQ2G0W5T.jpg", "rating": "9.2", "year": "2023", "category": "Séries de Anime", "group": "Séries de Anime", "seasons": 1, "episodes_count": 12},
+                        {"id": "an_cur_7", "name": "Naruto Shippuden", "title": "Naruto Shippuden", "type": "series", "poster": "https://image.tmdb.org/t/p/w500/zAYRe2bJxpWTVrwwmBc006vPe2P.jpg", "backdrop": "https://image.tmdb.org/t/p/original/v5C78gD0V6d4yS7lS43P23tZcK3.jpg", "rating": "9.1", "year": "2017", "category": "Séries de Anime", "group": "Séries de Anime", "seasons": 21, "episodes_count": 500},
+                        {"id": "an_cur_8", "name": "Dragon Ball Super", "title": "Dragon Ball Super", "type": "series", "poster": "https://image.tmdb.org/t/p/w500/qeuRsq5Nti1bCslw3J9k9a19m2y.jpg", "backdrop": "https://image.tmdb.org/t/p/original/5lA9553m3u2pPsm559h70Qc1b7z.jpg", "rating": "9.0", "year": "2018", "category": "Séries de Anime", "group": "Séries de Anime", "seasons": 5, "episodes_count": 131}
+                    ]
+
+                    # 1) Collect Series from CURRENT_SERIES_MAP
+                    for s_title, s in CURRENT_SERIES_MAP.items():
+                        grp = (s.get("group", "") + " " + s.get("subgroup", "")).lower()
+                        t_lower = s_title.lower()
+                        if any(k in grp for k in ["anime", "donghua"]) or any(k in t_lower for k in anime_keywords):
+                            raw_items.append({
+                                "id": s.get("id") or s_title,
+                                "name": s_title,
+                                "title": s_title,
+                                "type": "series",
+                                "poster": s.get("logo") or "",
+                                "backdrop": s.get("logo") or "",
+                                "logo": s.get("logo") or "",
+                                "rating": "9.1",
+                                "year": "2024",
+                                "category": "Séries de Anime",
+                                "group": "Séries de Anime",
+                                "seasons": s.get("seasons_count", 1),
+                                "episodes_count": s.get("episodes_count", 1)
+                            })
+
+                    # 2) Collect Movies from CURRENT_CHANNELS
+                    for m in CURRENT_CHANNELS:
+                        if m.get("type") == "movie":
+                            grp = ((m.get("group") or "") + " " + (m.get("subgroup") or "")).lower()
+                            m_lower = (m.get("name") or "").lower()
+                            if any(k in grp for k in ["anime", "donghua"]) or any(k in m_lower for k in anime_keywords):
+                                raw_items.append({
+                                    "id": m.get("id"),
+                                    "name": m.get("name"),
+                                    "title": m.get("name"),
+                                    "type": "movie",
+                                    "poster": m.get("logo") or "",
+                                    "backdrop": m.get("logo") or "",
+                                    "logo": m.get("logo") or "",
+                                    "streamUrl": m.get("url"),
+                                    "url": m.get("url"),
+                                    "rating": "9.0",
+                                    "year": "2024",
+                                    "category": "Filmes de Anime",
+                                    "group": "Filmes de Anime"
+                                })
+                        elif m.get("type") == "live":
+                            grp = ((m.get("group") or "") + " " + (m.get("subgroup") or "")).lower()
+                            m_lower = (m.get("name") or "").lower()
+                            if ("desenho" in grp and "24" in grp) or any(k in m_lower for k in ["anime", "naruto", "dragon ball", "one piece", "pokemon"]):
+                                raw_items.append({
+                                    "id": m.get("id"),
+                                    "name": m.get("name"),
+                                    "title": m.get("name"),
+                                    "type": "live",
+                                    "poster": m.get("logo") or "",
+                                    "backdrop": m.get("logo") or "",
+                                    "logo": m.get("logo") or "",
+                                    "streamUrl": m.get("url"),
+                                    "url": m.get("url"),
+                                    "rating": "8.9",
+                                    "category": "Animes 24h Ao Vivo",
+                                    "group": "Animes 24h Ao Vivo"
+                                })
+
+                    # Sem fallback fake: exibe apenas animes reais da lista
+
+                    if subgroup and subgroup != "Todos":
+                        raw_items = [it for it in raw_items if it.get("category") == subgroup or it.get("group") == subgroup or subgroup.lower() in (it.get("name") or "").lower()]
+
+                    if search:
+                        s_low = search.lower().strip()
+                        raw_items = [it for it in raw_items if s_low in (it.get("name") or "").lower() or s_low in (it.get("category") or "").lower()]
+
+                elif item_type in ("sports", "esportes"):
+                    categories = ["Todos", "Futebol", "ESPN", "SporTV", "Premiere", "Lutas / UFC", "Automobilismo / F1", "Internacional"]
+                    for c in CURRENT_CHANNELS:
+                        grp = ((c.get("group") or "") + " " + (c.get("subgroup") or "") + " " + (c.get("name") or "")).lower()
+                        if any(k in grp for k in ["esporte", "sport", "espn", "sportv", "premiere", "futebol", "ufc", "combate", "dazn", "nba", "formula 1", "f1", "fifa"]):
+                            sub_cat = "Futebol"
+                            if "espn" in grp: sub_cat = "ESPN"
+                            elif "sportv" in grp: sub_cat = "SporTV"
+                            elif "premiere" in grp: sub_cat = "Premiere"
+                            elif any(k in grp for k in ["ufc", "combate", "luta", "mma"]): sub_cat = "Lutas / UFC"
+                            elif any(k in grp for k in ["f1", "formula 1", "corrida"]): sub_cat = "Automobilismo / F1"
+                            elif any(k in grp for k in ["world", "pt", "internacional"]): sub_cat = "Internacional"
+
+                            raw_items.append({
+                                "id": c.get("id"),
+                                "name": c.get("name"),
+                                "title": c.get("name"),
+                                "type": c.get("type", "live"),
+                                "poster": c.get("logo") or "",
+                                "backdrop": c.get("logo") or "",
+                                "logo": c.get("logo") or "",
+                                "streamUrl": c.get("url"),
+                                "url": c.get("url"),
+                                "rating": "9.2",
+                                "category": sub_cat,
+                                "group": sub_cat
+                            })
+
+                    if subgroup and subgroup != "Todos":
+                        raw_items = [it for it in raw_items if it.get("category") == subgroup or it.get("group") == subgroup or subgroup.lower() in (it.get("name") or "").lower()]
+
+                    if search:
+                        s_low = search.lower().strip()
+                        raw_items = [it for it in raw_items if s_low in (it.get("name") or "").lower()]
+
+                elif item_type in ("kids", "infantil"):
+                    categories = ["Todos", "Desenhos 24h", "Disney+ & Pixar", "Filmes Infantis", "Séries Infantis", "Canais ao Vivo"]
+                    for s_title, s in CURRENT_SERIES_MAP.items():
+                        grp = ((s.get("group") or "") + " " + (s.get("subgroup") or "")).lower()
+                        if any(k in grp for k in ["infantil", "kids", "desenho", "cartoon", "nickelodeon", "disney"]):
+                            raw_items.append({
+                                "id": s.get("id") or s_title,
+                                "name": s_title,
+                                "title": s_title,
+                                "type": "series",
+                                "poster": s.get("logo") or "",
+                                "backdrop": s.get("logo") or "",
+                                "logo": s.get("logo") or "",
+                                "rating": "9.0",
+                                "year": "2024",
+                                "category": "Séries Infantis",
+                                "group": "Séries Infantis",
+                                "seasons": s.get("seasons_count", 1),
+                                "episodes_count": s.get("episodes_count", 1)
+                            })
+                    for c in CURRENT_CHANNELS:
+                        grp = ((c.get("group") or "") + " " + (c.get("subgroup") or "")).lower()
+                        if any(k in grp for k in ["infantil", "kids", "desenho", "cartoon", "nickelodeon", "disney"]):
+                            sub_cat = "Filmes Infantis" if c.get("type") == "movie" else ("Desenhos 24h" if "24" in grp else "Canais ao Vivo")
+                            if "disney" in grp: sub_cat = "Disney+ & Pixar"
+                            raw_items.append({
+                                "id": c.get("id"),
+                                "name": c.get("name"),
+                                "title": c.get("name"),
+                                "type": c.get("type", "movie"),
+                                "poster": c.get("logo") or "",
+                                "backdrop": c.get("logo") or "",
+                                "logo": c.get("logo") or "",
+                                "streamUrl": c.get("url"),
+                                "url": c.get("url"),
+                                "rating": "9.1",
+                                "category": sub_cat,
+                                "group": sub_cat
+                            })
+
+                    if subgroup and subgroup != "Todos":
+                        raw_items = [it for it in raw_items if it.get("category") == subgroup or it.get("group") == subgroup or subgroup.lower() in (it.get("name") or "").lower()]
+
+                    if search:
+                        s_low = search.lower().strip()
+                        raw_items = [it for it in raw_items if s_low in (it.get("name") or "").lower()]
+
+                elif item_type in ("trending", "bombando", "releases", "lancamentos"):
+                    categories = ["Todos", "Filmes 2025", "Filmes 2024", "Séries Recentes", "4K Ultra HD"]
+                    movies = [c for c in CURRENT_CHANNELS if c.get("type") == "movie"][:80]
+                    series = list(CURRENT_SERIES_MAP.values())[:80]
                     for m in movies:
+                        grp = (m.get("subgroup") or m.get("group") or "").lower()
+                        sub_cat = "Filmes 2025" if "2025" in grp or "2025" in (m.get("name") or "") else ("Filmes 2024" if "2024" in grp else "4K Ultra HD")
                         raw_items.append({
                             "id": m.get("id"),
                             "name": m.get("name"),
@@ -2127,7 +2282,8 @@ class IPTVServerHandler(http.server.SimpleHTTPRequestHandler):
                             "url": m.get("url"),
                             "rating": "9.5",
                             "year": "2025",
-                            "category": m.get("subgroup") or "Bombando"
+                            "category": sub_cat,
+                            "group": sub_cat
                         })
                     for s in series:
                         raw_items.append({
@@ -2140,9 +2296,17 @@ class IPTVServerHandler(http.server.SimpleHTTPRequestHandler):
                             "logo": s.get("logo") or "",
                             "rating": "9.4",
                             "year": "2025",
-                            "category": s.get("group") or "Bombando",
+                            "category": "Séries Recentes",
+                            "group": "Séries Recentes",
                             "seasons": s.get("seasons_count", 1)
                         })
+
+                    if subgroup and subgroup != "Todos":
+                        raw_items = [it for it in raw_items if it.get("category") == subgroup or it.get("group") == subgroup or subgroup.lower() in (it.get("name") or "").lower()]
+
+                    if search:
+                        s_low = search.lower().strip()
+                        raw_items = [it for it in raw_items if s_low in (it.get("name") or "").lower()]
 
                 total = len(raw_items)
                 if limit > 0:
@@ -2393,13 +2557,13 @@ class IPTVServerHandler(http.server.SimpleHTTPRequestHandler):
 
             # API: Netflix-style Sync Profiles
             if path == "/api/sync/profiles":
-                email = query.get("email", [""])[0].strip().lower()
+                email = sync_hub.normalize_email(query.get("email", [""])[0])
                 account_code = query.get("code", query.get("accountCode", [""]))[0].strip()
                 if not account_code and email:
                     sync_data = sync_hub.load_sync_data()
                     account_code = sync_data.get("accounts", {}).get(email, {}).get("accountCode", "")
-                    if not account_code and email in ("angeloregis@gmail.com", "angelo.regis@gmail.com"):
-                        account_code = "ACC_BD24EFDF"
+                    if not account_code and email:
+                        account_code = sync_hub.make_account_code(email)
                 if not account_code:
                     account_code = "PADRAO"
                 self.send_json(sync_hub.get_profiles(account_code))
@@ -2429,13 +2593,8 @@ class IPTVServerHandler(http.server.SimpleHTTPRequestHandler):
                 self.send_json(res)
                 return
 
-            # Web: Health Check for Render
-            if path in ("/health", "/healthz", "/ping"):
-                self.send_json({"status": "healthy", "service": "streamflix-cinema-backend", "time": int(time.time())})
-                return
-
-            # Web: Mobile Login & Profile Page (Rendered inline for smartphones and web, NOT downloaded)
-            if path in ("/", "/login", "/login-celular", "/login_celular.html", "/login_celular"):
+            # Web: Mobile Login Page (Rendered inline for smartphones, NOT downloaded)
+            if path in ("/login-celular", "/login_celular.html"):
                 celular_file = STATIC_DIR / "login_celular.html"
                 if not celular_file.exists():
                     alt_file = BASE_DIR.parent / "iptv_samsung_tv" / "login_celular.html"
@@ -2617,36 +2776,10 @@ class IPTVServerHandler(http.server.SimpleHTTPRequestHandler):
             else:
                 body = {}
 
-            # Database Administration APIs
-            if path == "/api/database/users":
-                email = (body.get("email") or "").strip()
-                password = (body.get("password") or "").strip()
-                if not email or not password:
-                    self.send_json({"success": False, "error": "Email e senha são obrigatórios."}, 400)
-                    return
-                playlist_url = (body.get("playlistUrl") or body.get("playlist_url") or "").strip()
-                if not playlist_url and "angeloregis" not in email.lower():
-                    playlist_url = "https://example.com/demo.m3u"
-                res = sync_hub.register_account(email, password, playlist_url)
-                self.send_json(res)
-                return
-
-            if path == "/api/database/users/delete":
-                email = (body.get("email") or "").strip().lower()
-                if email in database.MASTER_EMAILS or "angeloregis" in email:
-                    self.send_json({"success": False, "error": "A conta master Angelo Regis está protegida e não pode ser excluída."}, 403)
-                    return
-                ok = database.delete_user(email)
-                if ok:
-                    self.send_json({"success": True, "message": f"Usuário {email} excluído com sucesso."})
-                else:
-                    self.send_json({"success": False, "error": f"Usuário {email} não encontrado no banco."}, 404)
-                return
-
             # API: Mobile Confirms Pairing & Logs in TV
             if path == "/api/auth/pair/confirm":
                 code = body.get("code", "").strip()
-                email = body.get("email", "").strip().lower()
+                email = sync_hub.normalize_email(body.get("email", ""))
                 password = body.get("password", "").strip()
                 is_register = body.get("isRegister", False)
                 quick_connect = body.get("quickConnect", False)
@@ -2693,7 +2826,7 @@ class IPTVServerHandler(http.server.SimpleHTTPRequestHandler):
 
             # API: Forgot Password
             if path in ("/api/auth/forgot-password", "/api/auth/forgot"):
-                email = body.get("email", "").strip().lower()
+                email = sync_hub.normalize_email(body.get("email", ""))
                 res = sync_hub.forgot_password(email)
                 status = 200 if res.get("success") else 400
                 self.send_json(res, status)
@@ -2701,7 +2834,7 @@ class IPTVServerHandler(http.server.SimpleHTTPRequestHandler):
 
             # API: Reset Password
             if path in ("/api/auth/reset-password", "/api/auth/reset"):
-                email = body.get("email", "").strip().lower()
+                email = sync_hub.normalize_email(body.get("email", ""))
                 new_password = body.get("newPassword", "")
                 res = sync_hub.reset_password(email, new_password)
                 status = 200 if res.get("success") else 400
@@ -2728,7 +2861,7 @@ class IPTVServerHandler(http.server.SimpleHTTPRequestHandler):
             # API: Activate User Playlist (Isola lista do usuário logado)
             if path == "/api/auth/activate":
                 global CURRENT_CHANNELS, CURRENT_PLAYLIST_NAME, CURRENT_PLAYLIST_META, CURRENT_GROUPED_CATEGORIES
-                email = body.get("email", "").strip().lower()
+                email = sync_hub.normalize_email(body.get("email", ""))
                 url = body.get("playlistUrl", "").strip()
                 if not url and email:
                     sync_data = sync_hub.load_sync_data()
@@ -2939,13 +3072,13 @@ class IPTVServerHandler(http.server.SimpleHTTPRequestHandler):
 
             # API: Netflix-style Sync Profiles (POST)
             if path == "/api/sync/profiles":
-                email = body.get("email", "").strip().lower()
+                email = sync_hub.normalize_email(body.get("email", ""))
                 account_code = body.get("accountCode", "").strip()
                 if not account_code and email:
                     sync_data = sync_hub.load_sync_data()
                     account_code = sync_data.get("accounts", {}).get(email, {}).get("accountCode", "")
-                    if not account_code and email in ("angeloregis@gmail.com", "angelo.regis@gmail.com"):
-                        account_code = "ACC_BD24EFDF"
+                    if not account_code and email:
+                        account_code = sync_hub.make_account_code(email)
                 if not account_code:
                     account_code = "PADRAO"
                 action = body.get("action", "save")
@@ -3064,42 +3197,44 @@ def start_auto_update_daemon(interval_seconds=1800):
 
 class ThreadedIPTVServer(socketserver.ThreadingMixIn, http.server.HTTPServer):
     daemon_threads = True
+    # No Windows, SO_REUSEADDR permite que VÁRIOS processos escutem na mesma
+    # porta ao mesmo tempo: as conexões são distribuídas entre eles e parte
+    # delas cai em instâncias antigas/travadas. Isso deixava o app sem catálogo
+    # e sem imagens de forma intermitente. Mantemos o bind exclusivo.
     allow_reuse_address = False
 
-
-def start_anti_hibernation_daemon(interval_seconds=480):
-    """Guardião interno anti-hibernação do Render (Self-Ping a cada 8 minutos)."""
-    def worker():
-        time.sleep(25)  # Aguarda inicialização completa
-        target_url = os.environ.get("RENDER_EXTERNAL_URL", "https://streamflix-server.onrender.com")
-        health_url = f"{target_url.rstrip('/')}/health"
-        print(f"[Anti-Sleep] Guardião interno 24/7 ativado para {health_url} (a cada {interval_seconds // 60} min)")
-        while True:
-            time.sleep(interval_seconds)
+    def server_bind(self):
+        if os.name == "nt":
+            # SO_EXCLUSIVEADDRUSE é a forma correta no Windows de impedir que
+            # outro processo "roube" a porta. Em versões do Python onde a opção
+            # não existe, ignoramos.
             try:
-                req = urllib.request.Request(
-                    health_url,
-                    headers={"User-Agent": "StreamFlix-AntiSleep-Internal/1.0", "Accept": "application/json"}
-                )
-                with urllib.request.urlopen(req, timeout=25) as resp:
-                    print(f"[Anti-Sleep] Ping autônomo recebido com sucesso! Status: {resp.status}")
-            except Exception as e:
-                print(f"[Anti-Sleep] Aviso de ping: {e}")
+                self.socket.setsockopt(socket.SOL_SOCKET, getattr(socket, "SO_EXCLUSIVEADDRUSE", -5), 1)
+            except Exception:
+                pass
+        super().server_bind()
 
-    t = threading.Thread(target=worker, daemon=True, name="StreamFlixAntiSleepDaemon")
-    t.start()
 
 def start_server(port=8895):
+    # Falha rápido se a porta já estiver ocupada: carregar o catálogo (100+ MB)
+    # antes de tentar o bind desperdiça memória e tempo quando já existe uma
+    # instância saudável — foi isso que permitiu dezenas de processos duplicados.
+    probe = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    try:
+        probe.settimeout(0.5)
+        if probe.connect_ex(("127.0.0.1", port)) == 0:
+            raise OSError(f"Já existe um servidor escutando na porta {port}")
+    finally:
+        probe.close()
+
     load_initial_channels()
     start_auto_update_daemon()
-    start_anti_hibernation_daemon()
     server = ThreadedIPTVServer(("0.0.0.0", port), IPTVServerHandler)
     print(f"[IPTV Server] Rodando na rede local em http://0.0.0.0:{port} (Acesse via PC ou Smart TV / Celular)")
     return server
 
 if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 8895))
-    httpd = start_server(port)
+    httpd = start_server(8895)
     try:
         httpd.serve_forever()
     except KeyboardInterrupt:

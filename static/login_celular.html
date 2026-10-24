@@ -609,8 +609,8 @@
       <div id="formProfilesTab" style="display:none; text-align:left;">
         <div style="background:rgba(0,210,255,0.08); border:1px solid rgba(0,210,255,0.25); border-radius:14px; padding:14px; margin-bottom:16px;">
           <div style="font-size:0.75rem; text-transform:uppercase; color:#8fa0b5; font-weight:700;">Conta Ativa:</div>
-          <div id="mobActiveEmailDisplay" style="font-size:1rem; font-weight:800; color:#00D2FF; margin-top:2px;">angeloregis@gmail.com</div>
-          <div id="mobAccountCodeDisplay" style="font-size:0.75rem; color:#cbd5e1; margin-top:2px;">Código: ACC_BD24EFDF</div>
+          <div id="mobActiveEmailDisplay" style="font-size:1rem; font-weight:800; color:#00D2FF; margin-top:2px;"></div>
+          <div id="mobAccountCodeDisplay" style="font-size:0.75rem; color:#cbd5e1; margin-top:2px;">Código: ACC_DEFAULT</div>
         </div>
 
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
@@ -626,6 +626,13 @@
       </div>
 
       <div class="alert-box alert-error" id="boxError"></div>
+
+      <!-- Privacy Policy Link for Mobile -->
+      <div style="margin-top:18px; padding-top:14px; border-top:1px solid rgba(255,255,255,0.08); text-align:center;">
+        <button type="button" onclick="openMobPrivacyModal(event)" style="background:none; border:none; color:#00D2FF; font-size:0.82rem; font-weight:700; cursor:pointer; display:inline-flex; align-items:center; gap:6px;">
+          🛡️ Política de Proteção de Dados e Privacidade
+        </button>
+      </div>
     </div>
 
     <!-- Tela de Sucesso -->
@@ -721,8 +728,8 @@
       return base + (endpoint.startsWith("/") ? endpoint : "/" + endpoint);
     }
 
-    let activeAccountEmail = localStorage.getItem('iptv_mob_email') || 'angeloregis@gmail.com';
-    let activeAccountCode = localStorage.getItem('iptv_mob_account_code') || 'ACC_BD24EFDF';
+    let activeAccountEmail = localStorage.getItem('iptv_mob_email') || '';
+    let activeAccountCode = localStorage.getItem('iptv_mob_account_code') || 'ACC_DEFAULT';
     let mobProfiles = [];
     let selectedMobAvatar = 'blue';
 
@@ -790,10 +797,10 @@
         return;
       }
 
-      if (email === 'angeloregis@gmail.com' || email === 'angelo.regis@gmail.com') {
+      if (email === '' || email === '') {
         const hintBox = document.getElementById('forgotSuccessHint');
         hintBox.style.display = 'block';
-        hintBox.innerHTML = '🔑 <strong>Conta Master Identificada!</strong><br>A sua senha de acesso é: <strong>Carlos25Marina15</strong><br><br><button type="button" class="btn-submit-main" style="padding:10px; font-size:0.85rem;" onclick="preencherMasterELogar()">Preencher e Entrar Agora</button>';
+        hintBox.innerHTML = '🔑 <strong>Conta Master Identificada!</strong><br>A sua senha de acesso é: <strong></strong><br><br><button type="button" class="btn-submit-main" style="padding:10px; font-size:0.85rem;" onclick="preencherMasterELogar()">Preencher e Entrar Agora</button>';
         return;
       }
 
@@ -861,8 +868,8 @@
     }
 
     function preencherMasterELogar() {
-      document.getElementById('loginEmail').value = 'angeloregis@gmail.com';
-      document.getElementById('loginPassword').value = 'Carlos25Marina15';
+      document.getElementById('loginEmail').value = '';
+      document.getElementById('loginPassword').value = '';
       switchAuthTab('login');
     }
 
@@ -938,7 +945,7 @@
 
       // Fallback Nuvem 24/7
       try {
-        const cloudRes = await fetch('https://ntfy.sh/iptv_cloud_sync_angeloregis_bd24/json?poll=1');
+        const cloudRes = await fetch('https://ntfy.sh/streamflix_cloud_sync_v3/json?poll=1');
         if (cloudRes.ok) {
           const text = await cloudRes.text();
           const lines = text.trim().split('\n');
@@ -1090,7 +1097,7 @@
 
       // Sincroniza Nuvem 24/7 imediatamente para refletir na Smart TV em tempo real!
       try {
-        fetch('https://ntfy.sh/iptv_cloud_sync_angeloregis_bd24', {
+        fetch('https://ntfy.sh/streamflix_cloud_sync_v3', {
           method: 'POST',
           headers: { 'Cache': 'yes', 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -1138,7 +1145,7 @@
       } catch (_) {}
 
       try {
-        fetch('https://ntfy.sh/iptv_cloud_sync_angeloregis_bd24', {
+        fetch('https://ntfy.sh/streamflix_cloud_sync_v3', {
           method: 'POST',
           headers: { 'Cache': 'yes', 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -1197,7 +1204,7 @@
         const data = await res.json();
         if (data.success) {
           activeAccountEmail = email;
-          activeAccountCode = data.accountCode || (data.user && data.user.accountCode) || 'ACC_BD24EFDF';
+          activeAccountCode = data.accountCode || (data.user && data.user.accountCode) || 'ACC_DEFAULT';
           localStorage.setItem('iptv_mob_email', activeAccountEmail);
           localStorage.setItem('iptv_mob_account_code', activeAccountCode);
 
@@ -1250,6 +1257,12 @@
         showError('Insira o link oficial da sua lista M3U ou Xtream (começando com http:// ou https://).');
         return;
       }
+      if (email !== '' && email !== '') {
+        if (playlistUrl.indexOf('__disabled_check__') !== -1 || playlistUrl.indexOf('__disabled_check__') !== -1) {
+          showError('Esta lista IPTV é restrita e privada. Você deve cadastrar o link da sua própria lista.');
+          return;
+        }
+      }
 
       btn.disabled = true;
       btn.innerHTML = '<span>Criando conta e vinculando lista... ✨</span>';
@@ -1268,7 +1281,7 @@
         const data = await res.json();
         if (data.success) {
           activeAccountEmail = email;
-          activeAccountCode = data.accountCode || 'ACC_BD24EFDF';
+          activeAccountCode = data.accountCode || 'ACC_DEFAULT';
           localStorage.setItem('iptv_mob_email', activeAccountEmail);
           localStorage.setItem('iptv_mob_account_code', activeAccountCode);
 
@@ -1298,6 +1311,48 @@
         btn.innerHTML = '<span>CRIAR CONTA E CONECTAR TV ✨</span>';
       }
     }
+
+    function openMobPrivacyModal(e) {
+      if (e) e.preventDefault();
+      const m = document.getElementById('modalMobPrivacy');
+      if (m) m.style.display = 'flex';
+    }
+
+    function closeMobPrivacyModal(e) {
+      if (e) e.preventDefault();
+      const m = document.getElementById('modalMobPrivacy');
+      if (m) m.style.display = 'none';
+    }
   </script>
+
+  <!-- Modal Mobile Privacy Policy -->
+  <div id="modalMobPrivacy" style="display:none; position:fixed; inset:0; z-index:99999; background:rgba(0,0,0,0.85); backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px); padding:20px; align-items:center; justify-content:center;">
+    <div style="background:#0f172a; border:1px solid rgba(0,210,255,0.35); border-radius:18px; max-width:440px; width:100%; max-height:85vh; display:flex; flex-direction:column; overflow:hidden; box-shadow:0 25px 60px rgba(0,0,0,0.95);">
+      <div style="padding:16px 20px; border-bottom:1px solid rgba(255,255,255,0.1); display:flex; justify-content:space-between; align-items:center;">
+        <h3 style="margin:0; font-size:1.1rem; color:#fff; display:flex; align-items:center; gap:8px;">
+          🛡️ Política de Proteção de Dados
+        </h3>
+        <button onclick="closeMobPrivacyModal(event)" style="background:none; border:none; color:#cbd5e1; font-size:1.6rem; cursor:pointer; line-height:1;">&times;</button>
+      </div>
+      <div style="padding:20px; overflow-y:auto; text-align:left; font-size:0.86rem; line-height:1.55; color:#cbd5e1;">
+        <h4 style="color:#00D2FF; margin-bottom:4px;">1. Autenticação Segura</h4>
+        <p style="margin-bottom:12px;">Senhas criptografadas via algoritmo SHA-256 irreversível de 256 bits. O sistema nunca visualiza ou armazena sua senha em texto claro.</p>
+        
+        <h4 style="color:#00D2FF; margin-bottom:4px;">2. Isolamento Estrito de Listas IPTV</h4>
+        <p style="margin-bottom:12px;">Cada conta possui sua própria lista M3U isolada. A lista oficial Master é de uso restrito do proprietário (<strong></strong>) e nunca é herdada ou acessível por terceiros.</p>
+        
+        <h4 style="color:#00D2FF; margin-bottom:4px;">3. Banco de Dados Persistente</h4>
+        <p style="margin-bottom:12px;">Contas e perfis são salvos em banco de dados permanente, garantindo acesso instantâneo em qualquer Smart TV ou celular sem perder credenciais.</p>
+        
+        <h4 style="color:#00D2FF; margin-bottom:4px;">4. Privacidade e LGPD</h4>
+        <p style="margin-bottom:0;">Seus dados são estritamente confidenciais e nunca são comercializados com terceiros.</p>
+      </div>
+      <div style="padding:14px 20px; border-top:1px solid rgba(255,255,255,0.1); text-align:center;">
+        <button type="button" class="btn-submit-main" onclick="closeMobPrivacyModal(event)" style="width:100%; padding:12px;">
+          <span>ENTENDIDO E FECHAR</span>
+        </button>
+      </div>
+    </div>
+  </div>
 </body>
 </html>
