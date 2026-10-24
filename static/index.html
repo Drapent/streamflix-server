@@ -8,6 +8,18 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Outfit:wght@500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="styles.css?v=20261024_06">
+  <script>
+    try {
+      var cachedOtaCss = localStorage.getItem("sf_ota_css");
+      if (cachedOtaCss && cachedOtaCss.length > 500) {
+        var otaStyle = document.createElement("style");
+        otaStyle.id = "sfOtaInjectedStyle";
+        otaStyle.textContent = cachedOtaCss;
+        document.head.appendChild(otaStyle);
+        console.log("[OTA CSS] Estilos atualizados da Nuvem injetados com sucesso!");
+      }
+    } catch(e) {}
+  </script>
   <script src="hls.min.js"></script>
   <script src="mpegts.js"></script>
   <script>
@@ -1619,7 +1631,143 @@
     </div>
   </div>
 
-  <script src="app.js?v=20261024_06"></script>
+  <!-- ====================================================================
+       STREAMFLIX OTA ZERO-TOUCH AUTO-UPDATE BOOTLOADER
+       Atualiza o aplicativo da Smart TV automaticamente via Wi-Fi sempre
+       que o código for alterado no PC, sem precisar reinstalar via Pen Drive!
+       ==================================================================== -->
+  <script id="sfOtaBootloader">
+  (function() {
+    var LOCAL_BUILD_TS = 1761338250;
+    var OTA_VERSION_URLS = [
+      "https://raw.githubusercontent.com/Drapent/streamflix-server/main/version.json",
+      "https://cdn.jsdelivr.net/gh/Drapent/streamflix-server@main/version.json"
+    ];
+    var OTA_CODE_MIRRORS = [
+      {
+        js: "https://raw.githubusercontent.com/Drapent/streamflix-server/main/static/app.js",
+        css: "https://raw.githubusercontent.com/Drapent/streamflix-server/main/static/styles.css"
+      },
+      {
+        js: "https://cdn.jsdelivr.net/gh/Drapent/streamflix-server@main/static/app.js",
+        css: "https://cdn.jsdelivr.net/gh/Drapent/streamflix-server@main/static/styles.css"
+      }
+    ];
+
+    // 1. EXECUÇÃO IMEDIATA (0ms de latência no boot da TV)
+    var activeCode = null;
+    var activeTs = LOCAL_BUILD_TS;
+    try {
+      var savedTs = parseInt(localStorage.getItem("sf_ota_ts") || "0", 10);
+      if (savedTs > LOCAL_BUILD_TS) {
+        activeCode = localStorage.getItem("sf_ota_js");
+        activeTs = savedTs;
+      }
+    } catch(e) {}
+
+    function runBundledApp() {
+      var s = document.createElement("script");
+      s.src = "app.js?t=" + Date.now();
+      document.body.appendChild(s);
+    }
+
+    if (activeCode && activeCode.length > 50000) {
+      try {
+        var otaScript = document.createElement("script");
+        otaScript.type = "text/javascript";
+        otaScript.text = activeCode;
+        document.body.appendChild(otaScript);
+        console.log("[OTA Bootloader] Rodando versão OTA autônoma atualizada (TS: " + activeTs + ")!");
+      } catch(err) {
+        console.warn("[OTA Bootloader] Falha ao rodar código OTA, usando versão empacotada:", err);
+        try { localStorage.removeItem("sf_ota_js"); } catch(_) {}
+        runBundledApp();
+      }
+    } else {
+      runBundledApp();
+    }
+
+    // 2. VERIFICAÇÃO AUTOMÁTICA EM SEGUNDO PLANO (NÃO TRAVA O INÍCIO DO APP)
+    function checkOtaUpdate() {
+      var checked = false;
+      OTA_VERSION_URLS.forEach(function(url) {
+        if (checked) return;
+        try {
+          var xhr = new XMLHttpRequest();
+          xhr.open("GET", url + "?_=" + Date.now(), true);
+          xhr.timeout = 4000;
+          xhr.onreadystatechange = function() {
+            if (xhr.readyState === 4 && xhr.status === 200) {
+              try {
+                var vData = JSON.parse(xhr.responseText);
+                var remoteTs = parseInt(vData.timestamp || "0", 10);
+                var currentBestTs = Math.max(LOCAL_BUILD_TS, parseInt(localStorage.getItem("sf_ota_ts") || "0", 10));
+                if (remoteTs > currentBestTs) {
+                  checked = true;
+                  console.log("[OTA] Nova versão disponível na Nuvem (" + remoteTs + " > " + currentBestTs + "). Baixando...");
+                  downloadOtaUpdate(remoteTs);
+                }
+              } catch(e) {}
+            }
+          };
+          xhr.send();
+        } catch(e) {}
+      });
+    }
+
+    // 3. DOWNLOAD RESILIENTE DO NOVO CÓDIGO E INSTALAÇÃO SILENCIOSA
+    function downloadOtaUpdate(newTs) {
+      var mirror = OTA_CODE_MIRRORS[0];
+      var xhrJs = new XMLHttpRequest();
+      xhrJs.open("GET", mirror.js + "?_=" + Date.now(), true);
+      xhrJs.timeout = 10000;
+      xhrJs.onreadystatechange = function() {
+        if (xhrJs.readyState === 4 && xhrJs.status === 200) {
+          var newJsCode = xhrJs.responseText;
+          if (newJsCode && newJsCode.length > 50000) {
+            try {
+              localStorage.setItem("sf_ota_js", newJsCode);
+              localStorage.setItem("sf_ota_ts", String(newTs));
+              
+              // Baixa o CSS também
+              var xhrCss = new XMLHttpRequest();
+              xhrCss.open("GET", mirror.css + "?_=" + Date.now(), true);
+              xhrCss.onreadystatechange = function() {
+                if (xhrCss.readyState === 4 && xhrCss.status === 200) {
+                  try {
+                    localStorage.setItem("sf_ota_css", xhrCss.responseText);
+                  } catch(_) {}
+                }
+                showOtaToast();
+              };
+              xhrCss.send();
+            } catch(e) {
+              console.warn("[OTA] Erro ao gravar nova versão no armazenamento da TV:", e);
+            }
+          }
+        }
+      };
+      xhrJs.send();
+    }
+
+    function showOtaToast() {
+      var toast = document.createElement("div");
+      toast.id = "sfOtaNotification";
+      toast.style.cssText = "position:fixed;bottom:25px;right:25px;background:#00d2ff;color:#050914;font-family:'Inter',sans-serif;font-weight:700;font-size:16px;padding:14px 24px;border-radius:12px;box-shadow:0 8px 30px rgba(0,210,255,0.5);z-index:99999999;display:flex;align-items:center;gap:10px;animation:fadeIn 0.4s ease;";
+      toast.innerHTML = "<span>🚀 STREAMFLIX Atualizado Automaticamente! Reiniciando em 2s...</span>";
+      document.body.appendChild(toast);
+
+      setTimeout(function() {
+        window.location.reload();
+      }, 2000);
+    }
+
+    // Inicia verificação 2 segundos após a abertura
+    setTimeout(checkOtaUpdate, 2000);
+    // E verifica periodicamente a cada 35 segundos enquanto o app estiver aberto!
+    setInterval(checkOtaUpdate, 35000);
+  })();
+  </script>
   <script src="gamepad.js" defer></script>
 <div id="compatBridge" style="display:none !important;">
   <div id="appToastNotification"></div>
