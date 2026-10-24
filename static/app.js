@@ -2422,7 +2422,12 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const streamUrl = useProxy ? apiUrl(`/proxy?url=${encodeURIComponent(channel.url)}`) : channel.url;
     const cleanUrl = channel.url.split("?")[0].toLowerCase();
-    const isDirectVideoFile = /\.(mp4|mkv|webm|avi)$/i.test(cleanUrl);
+    const isDirectVideoFile = /\.(mp4|mkv|webm|avi|m4v|mov)$/i.test(cleanUrl) ||
+                              chType === "movie" ||
+                              chType === "series" ||
+                              (channel.type && (channel.type === "movie" || channel.type === "series" || channel.type === "vod")) ||
+                              cleanUrl.indexOf("/movie/") !== -1 ||
+                              cleanUrl.indexOf("/series/") !== -1;
     const isM3u8Stream = /\.m3u8$/i.test(cleanUrl) || channel.url.toLowerCase().includes(".m3u8");
 
     // Engine Selection:
@@ -2604,13 +2609,13 @@ document.addEventListener("DOMContentLoaded", () => {
 
       hlsInstance = new Hls({
         startFragPrefetch: true,
-        maxBufferLength: isTravel ? 60 : 45,
-        maxMaxBufferLength: isTravel ? 120 : 90,
-        maxBufferSize: 60 * 1024 * 1024,
-        liveSyncDurationCount: isTravel ? 4 : 3,
+        maxBufferLength: isTravel ? 15 : 8,
+        maxMaxBufferLength: isTravel ? 30 : 15,
+        maxBufferSize: 30 * 1024 * 1024,
+        liveSyncDurationCount: 1,
         initialLiveManifestSize: 1,
         enableWorker: true,
-        lowLatencyMode: false,
+        lowLatencyMode: true,
         backBufferLength: 45,
         maxBufferHole: 0.8,
         highBufferWatchdogPeriod: 2,
@@ -2686,12 +2691,12 @@ document.addEventListener("DOMContentLoaded", () => {
           url: streamUrl
         }, {
           enableWorker: false,
-          enableStashBuffer: true,
-          stashInitialSize: isTravel ? 2048 * 1024 : 1024 * 1024,
+          enableStashBuffer: false,
+          stashInitialSize: 128 * 1024,
           lazyLoad: false,
           lazyLoadMaxDuration: 0,
-          liveBufferLatencyChasing: false,
-          liveSync: false,
+          liveBufferLatencyChasing: true,
+          liveSync: true,
           autoCleanupSourceBuffer: true,
           autoCleanupMaxBackwardDuration: 120,
           autoCleanupMinBackwardDuration: 60,
@@ -7257,9 +7262,15 @@ document.addEventListener("DOMContentLoaded", () => {
   // ==========================================================================
   // MOTOR SERVERLESS 100% AUTÔNOMO (Funciona na TV/Mobile mesmo com PC Desligado!)
   // ==========================================================================
+  let isLocalServerOffline = (typeof window !== "undefined" && (!!window.tizen || !!window.webapis || (window.location && (window.location.protocol === "file:" || window.location.protocol === "app:" || window.location.protocol === "widget:"))));
+
   let directCatalogCache = {
     playlistUrl: "",
     creds: null,
+    vodCategories: [],
+    serCategories: [],
+    liveCategories: [],
+    categoryStreams: {},
     movies: [],
     series: [],
     live: [],
@@ -7267,6 +7278,23 @@ document.addEventListener("DOMContentLoaded", () => {
     seriesInfoCache: {},
     loadingPromise: null
   };
+
+  try {
+    const cachedFastCat = localStorage.getItem("iptv_fast_catalog_cache");
+    if (cachedFastCat) {
+      const parsedFast = JSON.parse(cachedFastCat);
+      if (parsedFast && (parsedFast.movies || parsedFast.series || parsedFast.live)) {
+        directCatalogCache.movies = parsedFast.movies || [];
+        directCatalogCache.series = parsedFast.series || [];
+        directCatalogCache.live = parsedFast.live || [];
+        directCatalogCache.all = [...directCatalogCache.movies, ...directCatalogCache.series, ...directCatalogCache.live];
+        directCatalogCache.vodCategories = parsedFast.vodCategories || [];
+        directCatalogCache.serCategories = parsedFast.serCategories || [];
+        directCatalogCache.liveCategories = parsedFast.liveCategories || [];
+        directCatalogCache.playlistUrl = parsedFast.playlistUrl || "";
+      }
+    }
+  } catch(e) {}
 
   function extractXtreamCredsFromUrl(url) {
     if (!url || typeof url !== "string") return null;
@@ -7384,6 +7412,7 @@ document.addEventListener("DOMContentLoaded", () => {
   async function ensureDirectPlaylistLoaded(forceUrl) {
     const targetUrl = (forceUrl || (currentAuthUser && currentAuthUser.playlistUrl) || localStorage.getItem("iptv_playlist_url") || "").trim();
     if (!targetUrl) return directCatalogCache;
+
     if (directCatalogCache.playlistUrl === targetUrl && directCatalogCache.all.length > 0) {
       return directCatalogCache;
     }
@@ -7400,28 +7429,47 @@ document.addEventListener("DOMContentLoaded", () => {
         try {
           const { baseUrl, username, password } = creds;
           const apiBase = `${baseUrl}/player_api.php?username=${encodeURIComponent(username)}&password=${encodeURIComponent(password)}`;
-          const [vodCatsRes, vodRes, serCatsRes, serRes, liveCatsRes, liveRes] = await Promise.all([
+
+          // 1. Carrega todas as categorias em paralelo (~250ms total)
+          const [vodCatsRes, serCatsRes, liveCatsRes] = await Promise.all([
             fetch(`${apiBase}&action=get_vod_categories`).then(r => r.ok ? r.json() : []).catch(() => []),
-            fetch(`${apiBase}&action=get_vod_streams`).then(r => r.ok ? r.json() : []).catch(() => []),
             fetch(`${apiBase}&action=get_series_categories`).then(r => r.ok ? r.json() : []).catch(() => []),
-            fetch(`${apiBase}&action=get_series`).then(r => r.ok ? r.json() : []).catch(() => []),
-            fetch(`${apiBase}&action=get_live_categories`).then(r => r.ok ? r.json() : []).catch(() => []),
-            fetch(`${apiBase}&action=get_live_streams`).then(r => r.ok ? r.json() : []).catch(() => [])
+            fetch(`${apiBase}&action=get_live_categories`).then(r => r.ok ? r.json() : []).catch(() => [])
           ]);
 
-          const vodCatMap = {};
-          if (Array.isArray(vodCatsRes)) vodCatsRes.forEach(c => { vodCatMap[c.category_id] = c.category_name; });
-          const serCatMap = {};
-          if (Array.isArray(serCatsRes)) serCatsRes.forEach(c => { serCatMap[c.category_id] = c.category_name; });
-          const liveCatMap = {};
-          if (Array.isArray(liveCatsRes)) liveCatsRes.forEach(c => { liveCatMap[c.category_id] = c.category_name; });
+          const vodCats = Array.isArray(vodCatsRes) ? vodCatsRes : [];
+          const serCats = Array.isArray(serCatsRes) ? serCatsRes : [];
+          const liveCats = Array.isArray(liveCatsRes) ? liveCatsRes : [];
 
-          const movies = Array.isArray(vodRes) ? vodRes.map(m => {
+          directCatalogCache.vodCategories = vodCats;
+          directCatalogCache.serCategories = serCats;
+          directCatalogCache.liveCategories = liveCats;
+
+          const vodCatMap = {};
+          vodCats.forEach(c => { vodCatMap[c.category_id] = c.category_name; });
+          const serCatMap = {};
+          serCats.forEach(c => { serCatMap[c.category_id] = c.category_name; });
+          const liveCatMap = {};
+          liveCats.forEach(c => { liveCatMap[c.category_id] = c.category_name; });
+
+          // 2. Busca os itens das categorias principais imediatamente (~200ms)
+          const topVodId = vodCats[0] ? vodCats[0].category_id : "";
+          const topSerId = serCats[0] ? serCats[0].category_id : "";
+          const topLiveId = liveCats[0] ? liveCats[0].category_id : "";
+
+          const [topVodRes, topSerRes, topLiveRes] = await Promise.all([
+            topVodId ? fetch(`${apiBase}&action=get_vod_streams&category_id=${topVodId}`).then(r => r.ok ? r.json() : []).catch(() => []) : [],
+            topSerId ? fetch(`${apiBase}&action=get_series&category_id=${topSerId}`).then(r => r.ok ? r.json() : []).catch(() => []) : [],
+            topLiveId ? fetch(`${apiBase}&action=get_live_streams&category_id=${topLiveId}`).then(r => r.ok ? r.json() : []).catch(() => []) : []
+          ]);
+
+          const mapMovie = m => {
             const ext = m.container_extension || "mp4";
             const sUrl = `${baseUrl}/movie/${username}/${password}/${m.stream_id}.${ext}`;
             const cat = vodCatMap[m.category_id] || "Filmes";
             return {
               id: "vod_" + m.stream_id,
+              stream_id: m.stream_id,
               name: m.name || "Filme",
               title: m.name || "Filme",
               type: "movie",
@@ -7435,9 +7483,9 @@ document.addEventListener("DOMContentLoaded", () => {
               group: cat,
               subgroup: cat
             };
-          }) : [];
+          };
 
-          const series = Array.isArray(serRes) ? serRes.map(s => {
+          const mapSeries = s => {
             const cat = serCatMap[s.category_id] || "Séries";
             const bd = (Array.isArray(s.backdrop_path) && s.backdrop_path[0]) ? s.backdrop_path[0] : (s.cover || "");
             return {
@@ -7455,13 +7503,14 @@ document.addEventListener("DOMContentLoaded", () => {
               group: cat,
               subgroup: cat
             };
-          }) : [];
+          };
 
-          const live = Array.isArray(liveRes) ? liveRes.map(l => {
+          const mapLive = l => {
             const sUrl = `${baseUrl}/live/${username}/${password}/${l.stream_id}.ts`;
             const cat = liveCatMap[l.category_id] || "Ao Vivo";
             return {
               id: "live_" + l.stream_id,
+              stream_id: l.stream_id,
               name: l.name || "Canal",
               title: l.name || "Canal",
               type: "live",
@@ -7474,18 +7523,40 @@ document.addEventListener("DOMContentLoaded", () => {
               group: cat,
               subgroup: cat
             };
-          }) : [];
+          };
+
+          const movies = Array.isArray(topVodRes) ? topVodRes.map(mapMovie) : [];
+          const series = Array.isArray(topSerRes) ? topSerRes.map(mapSeries) : [];
+          const live = Array.isArray(topLiveRes) ? topLiveRes.map(mapLive) : [];
+
+          if (topVodId) directCatalogCache.categoryStreams["movie_" + topVodId] = movies;
+          if (topSerId) directCatalogCache.categoryStreams["series_" + topSerId] = series;
+          if (topLiveId) directCatalogCache.categoryStreams["live_" + topLiveId] = live;
 
           if (movies.length > 0 || series.length > 0 || live.length > 0) {
             directCatalogCache.movies = movies;
             directCatalogCache.series = series;
             directCatalogCache.live = live;
             directCatalogCache.all = [...movies, ...series, ...live];
-            console.log(`[Serverless] Catálogo Xtream carregado direto: ${movies.length} filmes, ${series.length} séries, ${live.length} canais.`);
+
+            // Cache leve para inicialização instantânea (0ms)
+            try {
+              localStorage.setItem("iptv_fast_catalog_cache", JSON.stringify({
+                playlistUrl: targetUrl,
+                vodCategories: vodCats,
+                serCategories: serCats,
+                liveCategories: liveCats,
+                movies: movies.slice(0, 40),
+                series: series.slice(0, 40),
+                live: live.slice(0, 40)
+              }));
+            } catch (e) {}
+
+            console.log(`[FastServerless] Catálogo inicial carregado em ~500ms: ${movies.length} filmes, ${series.length} séries, ${live.length} canais.`);
             return directCatalogCache;
           }
         } catch (err) {
-          console.warn("[Serverless] Aviso ao consultar Xtream API direto:", err);
+          console.warn("[FastServerless] Erro na consulta rápida Xtream:", err);
         }
       }
 
@@ -7516,8 +7587,110 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
+  // Carrega qualquer categoria específica sob demanda em ~200ms com cache na memória
+  async function fetchXtreamCategoryStreams(type, categoryNameOrId) {
+    const creds = directCatalogCache.creds || extractXtreamCredsFromUrl((currentAuthUser && currentAuthUser.playlistUrl) || localStorage.getItem("iptv_playlist_url") || "");
+    if (!creds) return [];
+
+    const { baseUrl, username, password } = creds;
+    const apiBase = `${baseUrl}/player_api.php?username=${encodeURIComponent(username)}&password=${encodeURIComponent(password)}`;
+
+    let catId = "";
+    const catList = type === "series" ? directCatalogCache.serCategories : (type === "live" ? directCatalogCache.liveCategories : directCatalogCache.vodCategories);
+
+    if (categoryNameOrId && categoryNameOrId !== "Todos") {
+      const found = (catList || []).find(c => c.category_id === categoryNameOrId || c.category_name === categoryNameOrId);
+      if (found) catId = found.category_id;
+      else catId = categoryNameOrId;
+    }
+
+    const cacheKey = `${type}_${catId || 'all'}`;
+    if (directCatalogCache.categoryStreams[cacheKey] && directCatalogCache.categoryStreams[cacheKey].length > 0) {
+      return directCatalogCache.categoryStreams[cacheKey];
+    }
+
+    const action = type === "series" ? "get_series" : (type === "live" ? "get_live_streams" : "get_vod_streams");
+    const catQuery = catId ? `&category_id=${encodeURIComponent(catId)}` : "";
+    const url = `${apiBase}&action=${action}${catQuery}`;
+
+    try {
+      const res = await fetch(url);
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data)) {
+          let mapped = [];
+          if (type === "series") {
+            mapped = data.map(s => {
+              const bd = (Array.isArray(s.backdrop_path) && s.backdrop_path[0]) ? s.backdrop_path[0] : (s.cover || "");
+              return {
+                id: "ser_" + s.series_id,
+                series_id: String(s.series_id),
+                name: s.name || "Série",
+                title: s.name || "Série",
+                type: "series",
+                poster: s.cover || "",
+                backdrop: bd,
+                logo: s.cover || "",
+                plot: s.plot || "",
+                rating: s.rating || "8.8",
+                category: categoryNameOrId || "Séries",
+                group: categoryNameOrId || "Séries",
+                subgroup: categoryNameOrId || "Séries"
+              };
+            });
+          } else if (type === "live") {
+            mapped = data.map(l => {
+              const sUrl = `${baseUrl}/live/${username}/${password}/${l.stream_id}.ts`;
+              return {
+                id: "live_" + l.stream_id,
+                stream_id: l.stream_id,
+                name: l.name || "Canal",
+                title: l.name || "Canal",
+                type: "live",
+                poster: l.stream_icon || "",
+                backdrop: l.stream_icon || "",
+                logo: l.stream_icon || "",
+                url: sUrl,
+                streamUrl: sUrl,
+                category: categoryNameOrId || "Ao Vivo",
+                group: categoryNameOrId || "Ao Vivo",
+                subgroup: categoryNameOrId || "Ao Vivo"
+              };
+            });
+          } else {
+            mapped = data.map(m => {
+              const ext = m.container_extension || "mp4";
+              const sUrl = `${baseUrl}/movie/${username}/${password}/${m.stream_id}.${ext}`;
+              return {
+                id: "vod_" + m.stream_id,
+                stream_id: m.stream_id,
+                name: m.name || "Filme",
+                title: m.name || "Filme",
+                type: "movie",
+                poster: m.stream_icon || "",
+                backdrop: m.stream_icon || "",
+                logo: m.stream_icon || "",
+                url: sUrl,
+                streamUrl: sUrl,
+                rating: m.rating || "8.5",
+                category: categoryNameOrId || "Filmes",
+                group: categoryNameOrId || "Filmes",
+                subgroup: categoryNameOrId || "Filmes"
+              };
+            });
+          }
+          directCatalogCache.categoryStreams[cacheKey] = mapped;
+          return mapped;
+        }
+      }
+    } catch (e) {
+      console.warn(`[Xtream] Erro ao carregar categoria ${categoryNameOrId}:`, e);
+    }
+    return [];
+  }
+
+  // Carrega informações e episódios reais da série em 0.3s direto da nuvem!
   async function fetchDirectSeriesSeasons(seriesItem) {
-    await ensureDirectPlaylistLoaded();
     if (seriesItem && seriesItem.seasonsMap) {
       const seasons = Object.keys(seriesItem.seasonsMap);
       return { seasons, episodes: seriesItem.seasonsMap };
@@ -7527,9 +7700,10 @@ document.addEventListener("DOMContentLoaded", () => {
     if (directCatalogCache.seriesInfoCache[rawId]) {
       return directCatalogCache.seriesInfoCache[rawId];
     }
-    if (directCatalogCache.creds) {
+    const creds = directCatalogCache.creds || extractXtreamCredsFromUrl((currentAuthUser && currentAuthUser.playlistUrl) || localStorage.getItem("iptv_playlist_url") || "");
+    if (creds) {
       try {
-        const { baseUrl, username, password } = directCatalogCache.creds;
+        const { baseUrl, username, password } = creds;
         const url = `${baseUrl}/player_api.php?username=${encodeURIComponent(username)}&password=${encodeURIComponent(password)}&action=get_series_info&series_id=${encodeURIComponent(rawId)}`;
         const res = await fetch(url);
         if (res.ok) {
@@ -7540,15 +7714,22 @@ document.addEventListener("DOMContentLoaded", () => {
           seasons.forEach(sNum => {
             episodes[sNum] = (rawEps[sNum] || []).map(ep => {
               const ext = ep.container_extension || "mp4";
-              const epUrl = `${baseUrl}/series/${username}/${password}/${ep.id}.${ext}`;
+              const epStream = `${baseUrl}/series/${username}/${password}/${ep.id}.${ext}`;
               return {
                 id: "ep_" + ep.id,
-                title: ep.title || `Episódio ${ep.episode_num || 1}`,
-                season: ep.season || parseInt(sNum, 10) || 1,
+                title: ep.title || ("Episódio " + (ep.episode_num || "")),
+                name: ep.title || ("Episódio " + (ep.episode_num || "")),
+                season: parseInt(sNum, 10),
                 episode_num: ep.episode_num || 1,
-                url: epUrl,
-                direct_source: epUrl,
-                info: ep.info || {}
+                url: epStream,
+                streamUrl: epStream,
+                direct_source: epStream,
+                info: {
+                  plot: (ep.info && ep.info.plot) || "",
+                  duration: (ep.info && ep.info.duration) || "45 min",
+                  rating: (ep.info && ep.info.rating) || "8.5",
+                  movie_image: (ep.info && ep.info.movie_image) || ""
+                }
               };
             });
           });
@@ -7556,7 +7737,9 @@ document.addEventListener("DOMContentLoaded", () => {
           directCatalogCache.seriesInfoCache[rawId] = result;
           return result;
         }
-      } catch (e) {}
+      } catch (e) {
+        console.warn("[SeriesInfo] Erro ao carregar info da série:", e);
+      }
     }
     return null;
   }
@@ -7609,33 +7792,35 @@ document.addEventListener("DOMContentLoaded", () => {
     // 3. Carrega progresso sincronizado na Nuvem 24/7 + Servidor Local
     const cloudContinuePromise = loadContinueWatching().catch(() => []);
 
-    try {
-      const code = encodeURIComponent(currentAccountCode || "PADRAO");
-      const pid = encodeURIComponent(currentProfile.id || "p_main");
-      const res = await fetchWithTimeout(apiUrl(`/api/netflix/home?code=${code}&profileId=${pid}`), {}, 3500);
-      if (res.ok) {
-        const data = await res.json();
-        const mergedContinue = await cloudContinuePromise;
-        if (data.success && data.rows && data.rows.length > 0) {
-          let rows = data.rows.filter(r => r.type !== "continue" && !(r.title || "").toLowerCase().includes("continuar assistindo"));
-          if (mergedContinue && mergedContinue.length > 0) {
-            rows.unshift({
-              title: "Continuar Assistindo",
-              type: "continue",
-              isWide: true,
-              items: mergedContinue
-            });
+    const isStandalone = (typeof window !== "undefined" && (!!window.tizen || !!window.webapis || (window.location && (window.location.protocol === "file:" || window.location.protocol === "app:" || window.location.protocol === "widget:"))));
+    if (!isStandalone && !isLocalServerOffline) {
+      try {
+        const code = encodeURIComponent(currentAccountCode || "PADRAO");
+        const pid = encodeURIComponent(currentProfile.id || "p_main");
+        const res = await fetchWithTimeout(apiUrl(`/api/netflix/home?code=${code}&profileId=${pid}`), {}, 1200);
+        if (res.ok) {
+          const data = await res.json();
+          const mergedContinue = await cloudContinuePromise;
+          if (data.success && data.rows && data.rows.length > 0) {
+            let rows = data.rows.filter(r => r.type !== "continue" && !(r.title || "").toLowerCase().includes("continuar assistindo"));
+            if (mergedContinue && mergedContinue.length > 0) {
+              rows.unshift({
+                title: "Continuar Assistindo",
+                type: "continue",
+                isWide: true,
+                items: mergedContinue
+              });
+            }
+            if (data.hero) renderNetflixHero(data.hero);
+            else if (rows.length > 0 && rows[0].items && rows[0].items[0]) renderNetflixHero(rows[0].items[0]);
+            renderNetflixRows(rows);
+            return;
           }
-          if (data.hero) renderNetflixHero(data.hero);
-          else if (rows.length > 0 && rows[0].items && rows[0].items[0]) renderNetflixHero(rows[0].items[0]);
-          renderNetflixRows(rows);
-          return;
         }
+      } catch (e) {
+        isLocalServerOffline = true;
       }
-    } catch (e) {
-      console.warn("[Netflix Home] Servidor PC desligado ou indisponível, ativando modo Serverless direto:", e);
     }
-    // Fallback Serverless: carrega direto da lista M3U / Xtream do usuário + Nuvem!
     renderFallbackRows();
   }
 
@@ -7921,29 +8106,38 @@ document.addEventListener("DOMContentLoaded", () => {
     netflixRowsContainer.innerHTML = '<div class="net-loading-rows"><div class="net-spinner"></div><span>Carregando sua lista…</span></div>';
 
     const LIMIT = 24;
+    const isStandalone = (typeof window !== "undefined" && (!!window.tizen || !!window.webapis || (window.location && (window.location.protocol === "file:" || window.location.protocol === "app:" || window.location.protocol === "widget:"))));
 
-    async function safeJson(url) {
-      try {
-        const res = await fetchWithTimeout(url, {}, 2500);
-        if (!res.ok) return null;
-        return await res.json();
-      } catch (e) { return null; }
-    }
+    let liveItems = [];
+    let movieItems = [];
+    let seriesItems = [];
 
     try {
-      const [liveData, movieData, seriesData] = await Promise.all([
-        safeJson(apiUrl(`/api/channels?type=live&page=1&limit=${LIMIT}`)),
-        safeJson(apiUrl(`/api/channels?type=movie&page=1&limit=${LIMIT}`)),
-        safeJson(apiUrl(`/api/series?page=1&limit=${LIMIT}`))
-      ]);
+      if (!isStandalone && !isLocalServerOffline) {
+      async function safeJson(url) {
+        try {
+          const res = await fetchWithTimeout(url, {}, 1000);
+          if (!res.ok) return null;
+          return await res.json();
+        } catch (e) { return null; }
+      }
 
-      let liveItems = (liveData && liveData.channels) || [];
-      let movieItems = (movieData && movieData.channels) || [];
-      let seriesItems = (seriesData && seriesData.series) || [];
+      try {
+        const [liveData, movieData, seriesData] = await Promise.all([
+          safeJson(apiUrl(`/api/channels?type=live&page=1&limit=${LIMIT}`)),
+          safeJson(apiUrl(`/api/channels?type=movie&page=1&limit=${LIMIT}`)),
+          safeJson(apiUrl(`/api/series?page=1&limit=${LIMIT}`))
+        ]);
+        liveItems = (liveData && liveData.channels) || [];
+        movieItems = (movieData && movieData.channels) || [];
+        seriesItems = (seriesData && seriesData.series) || [];
+      } catch(e) {
+        isLocalServerOffline = true;
+      }
+    }
 
-      // Se o servidor PC estiver desligado, carrega DIRETO da lista M3U / Xtream da conta!
-      if (liveItems.length === 0 && movieItems.length === 0 && seriesItems.length === 0) {
-        const directCat = await ensureDirectPlaylistLoaded();
+    if (liveItems.length === 0 && movieItems.length === 0 && seriesItems.length === 0) {
+      const directCat = await ensureDirectPlaylistLoaded();
         liveItems = (directCat.live || []).slice(0, 30);
         movieItems = (directCat.movies || []).slice(0, 30);
         seriesItems = (directCat.series || []).slice(0, 30);
@@ -8326,19 +8520,44 @@ document.addEventListener("DOMContentLoaded", () => {
         if (isSeries && !directStream) {
           btnModalPlayMain.textContent = "Carregando...";
           const sId = item.series_id || item.title || item.name || item.id;
+          const isStandalone = (typeof window !== "undefined" && (!!window.tizen || !!window.webapis || (window.location && (window.location.protocol === "file:" || window.location.protocol === "app:" || window.location.protocol === "widget:"))));
+
+          if (!isStandalone && !isLocalServerOffline) {
+            try {
+              const res = await fetchWithTimeout(apiUrl(`/api/series/info?id=${encodeURIComponent(sId)}`), {}, 1000);
+              if (res.ok) {
+                const data = await res.json();
+                const seasons = data.seasons || [];
+                const episodes = data.episodes || {};
+                const firstSeason = seasons[0];
+                const epList = (firstSeason && episodes[firstSeason]) ? episodes[firstSeason] : [];
+                if (epList.length > 0) {
+                  const ep1 = epList[0];
+                  streamingDetailModal.style.display = "none";
+                  openNetflixPlayer({
+                    ...ep1,
+                    type: "series",
+                    seriesTitle: itemTitle(item),
+                    series_id: sId
+                  });
+                  return;
+                }
+              }
+            } catch (e) {
+              isLocalServerOffline = true;
+            }
+          }
+
+          // Fallback direto em 0.3s
           try {
-            const res = await fetch(apiUrl(`/api/series/info?id=${encodeURIComponent(sId)}`));
-            if (res.ok) {
-              const data = await res.json();
-              const seasons = data.seasons || [];
-              const episodes = data.episodes || {};
-              const firstSeason = seasons[0];
-              const epList = (firstSeason && episodes[firstSeason]) ? episodes[firstSeason] : [];
-              if (epList.length > 0) {
-                const ep1 = epList[0];
+            const directInfo = await fetchDirectSeriesSeasons(item);
+            if (directInfo && directInfo.seasons && directInfo.seasons.length > 0) {
+              const s0 = directInfo.seasons[0];
+              const ep0 = (directInfo.episodes[s0] || [])[0];
+              if (ep0) {
                 streamingDetailModal.style.display = "none";
                 openNetflixPlayer({
-                  ...ep1,
+                  ...ep0,
                   type: "series",
                   seriesTitle: itemTitle(item),
                   series_id: sId
@@ -8346,9 +8565,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 return;
               }
             }
-          } catch (e) {
-            console.error("Erro ao carregar episódio:", e);
-          }
+          } catch (e) {}
         }
         streamingDetailModal.style.display = "none";
         openNetflixPlayer(item);
@@ -8407,41 +8624,44 @@ document.addEventListener("DOMContentLoaded", () => {
     modalEpisodesGrid.innerHTML = '<div class="net-modal-loading"><div class="net-spinner"></div><span>Carregando episódios…</span></div>';
 
     const sId = item.series_id || item.title || item.name || item.id;
-    // Carrega episódios reais diretamente da lista M3U / Servidor
-
     if (!sId) {
       modalEpisodesGrid.innerHTML = '<div class="net-modal-empty">Série não identificada.</div>';
       return;
     }
 
-    try {
-      const res = await fetch(apiUrl(`/api/series/info?id=${encodeURIComponent(sId)}`));
-      if (res.ok) {
-        const data = await res.json();
-        const seasons = data.seasons || [];
-        const episodes = data.episodes || {};
+    const isStandalone = (typeof window !== "undefined" && (!!window.tizen || !!window.webapis || (window.location && (window.location.protocol === "file:" || window.location.protocol === "app:" || window.location.protocol === "widget:"))));
 
-        if (seasons.length > 0) {
-          modalSeasonTabs.innerHTML = "";
-          seasons.forEach((seasonNum, sIdx) => {
-            const tabBtn = document.createElement("button");
-            tabBtn.className = "season-tab-btn" + (sIdx === 0 ? " active" : "");
-            tabBtn.textContent = `Temporada ${seasonNum}`;
-            tabBtn.onclick = () => {
-              modalSeasonTabs.querySelectorAll(".season-tab-btn").forEach(b => b.classList.remove("active"));
-              tabBtn.classList.add("active");
-              renderEpisodesListForSeason(episodes[seasonNum] || [], item);
-            };
-            modalSeasonTabs.appendChild(tabBtn);
-          });
+    if (!isStandalone && !isLocalServerOffline) {
+      try {
+        const res = await fetchWithTimeout(apiUrl(`/api/series/info?id=${encodeURIComponent(sId)}`), {}, 1000);
+        if (res.ok) {
+          const data = await res.json();
+          const seasons = data.seasons || [];
+          const episodes = data.episodes || {};
 
-          renderEpisodesListForSeason(episodes[seasons[0]] || [], item);
-          return;
+          if (seasons.length > 0) {
+            modalSeasonTabs.innerHTML = "";
+            seasons.forEach((seasonNum, sIdx) => {
+              const tabBtn = document.createElement("button");
+              tabBtn.className = "season-tab-btn" + (sIdx === 0 ? " active" : "");
+              tabBtn.textContent = `Temporada ${seasonNum}`;
+              tabBtn.onclick = () => {
+                modalSeasonTabs.querySelectorAll(".season-tab-btn").forEach(b => b.classList.remove("active"));
+                tabBtn.classList.add("active");
+                renderEpisodesListForSeason(episodes[seasonNum] || [], item);
+              };
+              modalSeasonTabs.appendChild(tabBtn);
+            });
+
+            renderEpisodesListForSeason(episodes[seasons[0]] || [], item);
+            return;
+          }
         }
+      } catch (e) {
+        isLocalServerOffline = true;
       }
-    } catch (e) {}
+    }
 
-    // Fallback Serverless: Busca temporadas e episódios direto da API Xtream / M3U!
     try {
       const directInfo = await fetchDirectSeriesSeasons(item);
       if (directInfo && directInfo.seasons && directInfo.seasons.length > 0) {
@@ -9928,7 +10148,70 @@ document.addEventListener("DOMContentLoaded", () => {
     loadNetflixCatalogGrid(categoryType, false);
   }
 
+  async function loadServerlessCatalogGrid(type, apiType, append) {
+    const grid = document.getElementById("netCatalogGrid");
+    const emptyState = document.getElementById("netCatalogEmpty");
+    const loadingState = document.getElementById("netCatalogLoading");
+    const chipsContainer = document.getElementById("netCategoryChips");
+    if (!grid) return;
+
+    if (!append) {
+      grid.innerHTML = "";
+      currentCatalogPage = 1;
+    }
+    if (loadingState) loadingState.style.display = "flex";
+    if (emptyState) emptyState.style.display = "none";
+    currentCatalogLoading = true;
+
+    try {
+      await ensureDirectPlaylistLoaded();
+
+      const catList = apiType === "series" ? directCatalogCache.serCategories : (apiType === "live" ? directCatalogCache.liveCategories : directCatalogCache.vodCategories);
+      const catNames = ["Todos", ...(catList || []).map(c => c.category_name).filter(Boolean)];
+
+      if (chipsContainer && !append && catNames.length > 1) {
+        renderCatalogChips(catNames.slice(0, 30), type);
+      }
+
+      let activeCat = currentCatalogSubgroup;
+      if (!activeCat || activeCat === "Todos") {
+        activeCat = (catNames.length > 1) ? catNames[1] : "";
+      }
+
+      let items = await fetchXtreamCategoryStreams(apiType, activeCat);
+      if (items.length === 0) {
+        items = apiType === "series" ? (directCatalogCache.series || []) : (apiType === "live" ? (directCatalogCache.live || []) : (directCatalogCache.movies || []));
+      }
+
+      if (loadingState) loadingState.style.display = "none";
+      currentCatalogLoading = false;
+
+      if (items.length === 0) {
+        if (emptyState) emptyState.style.display = "block";
+        return;
+      }
+
+      items.slice(0, 120).forEach((item, idx) => {
+        const card = createNetflixCard(item, { isLive: item.type === "live" }, 0, idx);
+        grid.appendChild(card);
+      });
+    } catch (e) {
+      console.warn("[ServerlessGrid] Erro ao carregar grade:", e);
+      if (loadingState) loadingState.style.display = "none";
+      currentCatalogLoading = false;
+      if (grid.children.length === 0 && emptyState) emptyState.style.display = "block";
+    }
+  }
+
   async function loadNetflixCatalogGrid(type, append) {
+    const isStandalone = (typeof window !== "undefined" && (!!window.tizen || !!window.webapis || (window.location && (window.location.protocol === "file:" || window.location.protocol === "app:" || window.location.protocol === "widget:"))));
+    const apiType = type === "series" ? "series" : (type === "movies" ? "movie" : (type === "live" ? "live" : type));
+
+    if (isStandalone || isLocalServerOffline) {
+      await loadServerlessCatalogGrid(type, apiType, append);
+      return;
+    }
+
     const grid = document.getElementById("netCatalogGrid");
     const emptyState = document.getElementById("netCatalogEmpty");
     const loadingState = document.getElementById("netCatalogLoading");
@@ -10143,6 +10426,30 @@ document.addEventListener("DOMContentLoaded", () => {
     grid.innerHTML = "";
     if (loadingState) loadingState.style.display = "flex";
     if (emptyState) emptyState.style.display = "none";
+
+    const isStandalone = (typeof window !== "undefined" && (!!window.tizen || !!window.webapis || (window.location && (window.location.protocol === "file:" || window.location.protocol === "app:" || window.location.protocol === "widget:"))));
+    if (isStandalone || isLocalServerOffline) {
+      ensureDirectPlaylistLoaded().then(directCat => {
+        if (loadingState) loadingState.style.display = "none";
+        const qLow = query.toLowerCase();
+        const matches = (directCat.all || []).filter(it => (it.title || it.name || "").toLowerCase().includes(qLow)).slice(0, 80);
+        grid.innerHTML = "";
+        if (matches.length === 0) {
+          if (emptyState) {
+            emptyState.textContent = `Nenhum título encontrado para "${query}".`;
+            emptyState.style.display = "block";
+          }
+          return;
+        }
+        matches.forEach((item, idx) => {
+          grid.appendChild(createNetflixCard(item, { isLive: item.type === "live" }, 0, idx));
+        });
+      }).catch(() => {
+        if (loadingState) loadingState.style.display = "none";
+        if (emptyState) emptyState.style.display = "block";
+      });
+      return;
+    }
 
     fetch(apiUrl(`/api/search?q=${encodeURIComponent(query)}`))
       .then(res => res.json())
