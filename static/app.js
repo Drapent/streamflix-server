@@ -7486,8 +7486,8 @@ document.addEventListener("DOMContentLoaded", () => {
             directCatalogCache.movies = c.movies || [];
             directCatalogCache.series = c.series || [];
             directCatalogCache.live = c.live || [];
-            directCatalogCache.vodCategories = c.vodCategories || [];
-            directCatalogCache.serCategories = c.serCategories || [];
+            directCatalogCache.movieCategories = c.movieCategories || [];
+            directCatalogCache.seriesCategories = c.seriesCategories || [];
             directCatalogCache.liveCategories = c.liveCategories || [];
             directCatalogCache.all = [...directCatalogCache.movies, ...directCatalogCache.series, ...directCatalogCache.live];
             console.log(`[FastCatalog] Carregado do localStorage instantaneamente (0ms): ${directCatalogCache.all.length} itens.`);
@@ -7538,11 +7538,11 @@ document.addEventListener("DOMContentLoaded", () => {
 
               try {
                 localStorage.setItem("iptv_fast_catalog_cache", JSON.stringify({
-                  movies: directCatalogCache.movies.slice(0, 150),
-                  series: directCatalogCache.series.slice(0, 150),
-                  live: directCatalogCache.live.slice(0, 150),
-                  vodCategories: directCatalogCache.vodCategories,
-                  serCategories: directCatalogCache.serCategories,
+                  movies: directCatalogCache.movies.slice(0, 450),
+                  series: directCatalogCache.series.slice(0, 450),
+                  live: directCatalogCache.live.slice(0, 400),
+                  movieCategories: directCatalogCache.movieCategories,
+                  seriesCategories: directCatalogCache.seriesCategories,
                   liveCategories: directCatalogCache.liveCategories
                 }));
               } catch (se) {}
@@ -10131,11 +10131,108 @@ document.addEventListener("DOMContentLoaded", () => {
     loadNetflixCatalogGrid(categoryType, false);
   }
 
+  
+  // ==========================================================================
+  // IPTV SMARTERS / XCIPTV SPLIT CATEGORY SIDEBAR ENGINE
+  // ==========================================================================
+  function getDistinctCategoriesFromItems(items) {
+    const counts = {};
+    (items || []).forEach(it => {
+      const raw = it.group || it.category || it.subgroup || "Geral";
+      counts[raw] = (counts[raw] || 0) + 1;
+    });
+    const cats = [];
+    Object.keys(counts).sort((a, b) => counts[b] - counts[a]).forEach(raw => {
+      let disp = raw.replace(/^(Canais|Filmes|S[eé]ries)\s*[|\/]\s*/i, "").replace(/^\s*[|\/]\s*/, "").trim();
+      if (!disp) disp = raw;
+      cats.push({
+        id: raw,
+        raw: raw,
+        name: disp,
+        count: counts[raw]
+      });
+    });
+    return cats;
+  }
+
+  function renderIptvCategorySidebar(type, categories, activeCat) {
+    const catListEl = document.getElementById("iptvCategoryList");
+    const badgeEl = document.getElementById("iptvCatSectionBadge");
+    if (!catListEl) return;
+
+    catListEl.innerHTML = "";
+
+    // Set Section Badge
+    if (badgeEl) {
+      if (type === "live") badgeEl.textContent = "📡 Canais";
+      else if (type === "movies") badgeEl.textContent = "🎬 Filmes";
+      else if (type === "series") badgeEl.textContent = "📺 Séries";
+      else if (type === "favorites") badgeEl.textContent = "⭐ Favoritos";
+      else badgeEl.textContent = "Conteúdo";
+    }
+
+    const currentActive = activeCat || "Todos";
+
+    // 1. "Todos" item (e.g. "Todos os Canais", "Todos os Filmes", "Todas as Séries")
+    let totalCount = 0;
+    if (type === "movies") totalCount = (directCatalogCache.movies || []).length;
+    else if (type === "series") totalCount = (directCatalogCache.series || []).length;
+    else if (type === "live") totalCount = (directCatalogCache.live || []).length;
+
+    let todosLabel = "Todos";
+    if (type === "movies") todosLabel = "Todos os Filmes";
+    else if (type === "series") todosLabel = "Todas as Séries";
+    else if (type === "live") todosLabel = "Todos os Canais";
+
+    const allItem = document.createElement("button");
+    allItem.className = `iptv-cat-item ${currentActive === "Todos" ? "active" : ""}`;
+    allItem.tabIndex = 0;
+    allItem.innerHTML = `
+      <span class="iptv-cat-name">${todosLabel}</span>
+      <span class="iptv-cat-count">${totalCount}</span>
+    `;
+    allItem.addEventListener("click", () => {
+      currentCatalogSubgroup = "Todos";
+      catListEl.querySelectorAll(".iptv-cat-item").forEach(c => c.classList.remove("active"));
+      allItem.classList.add("active");
+      loadNetflixCatalogGrid(type, false);
+    });
+    catListEl.appendChild(allItem);
+
+    // 2. Individual Categories
+    (categories || []).forEach(cat => {
+      const catId = typeof cat === "string" ? cat : (cat.raw || cat.id || cat.name);
+      const catName = typeof cat === "string" ? cat : (cat.name || cat.id);
+      const count = typeof cat === "object" && cat.count ? cat.count : "";
+
+      if (!catName || catName === "Todos" || catName.toLowerCase() === "todos") return;
+
+      const btn = document.createElement("button");
+      const isActive = currentActive === catId || currentActive === catName;
+      btn.className = `iptv-cat-item ${isActive ? "active" : ""}`;
+      btn.tabIndex = 0;
+      btn.innerHTML = `
+        <span class="iptv-cat-name">${catName}</span>
+        ${count ? `<span class="iptv-cat-count">${count}</span>` : ""}
+      `;
+
+      btn.addEventListener("click", () => {
+        currentCatalogSubgroup = catId;
+        catListEl.querySelectorAll(".iptv-cat-item").forEach(c => c.classList.remove("active"));
+        btn.classList.add("active");
+        loadNetflixCatalogGrid(type, false);
+      });
+
+      catListEl.appendChild(btn);
+    });
+  }
+
   async function loadServerlessCatalogGrid(type, apiType, append) {
     const grid = document.getElementById("netCatalogGrid");
     const emptyState = document.getElementById("netCatalogEmpty");
     const loadingState = document.getElementById("netCatalogLoading");
-    const chipsContainer = document.getElementById("netCategoryChips");
+    const countBadge = document.getElementById("netCatalogCountBadge");
+    const titleEl = document.getElementById("netCatalogTitle");
     if (!grid) return;
 
     if (!append) {
@@ -10151,51 +10248,59 @@ document.addEventListener("DOMContentLoaded", () => {
 
       let allItems = [];
       let catList = [];
+      let defaultTitle = "Catálogo";
 
       if (type === "movies") {
         allItems = directCatalogCache.movies || [];
-        catList = directCatalogCache.movieCategories || [];
+        catList = (directCatalogCache.movieCategories && directCatalogCache.movieCategories.length)
+          ? directCatalogCache.movieCategories
+          : getDistinctCategoriesFromItems(allItems);
+        defaultTitle = "Filmes de Sucesso";
       } else if (type === "series") {
         allItems = directCatalogCache.series || [];
-        catList = directCatalogCache.seriesCategories || [];
+        catList = (directCatalogCache.seriesCategories && directCatalogCache.seriesCategories.length)
+          ? directCatalogCache.seriesCategories
+          : getDistinctCategoriesFromItems(allItems);
+        defaultTitle = "Séries de TV";
       } else if (type === "live") {
         allItems = directCatalogCache.live || [];
-        catList = directCatalogCache.liveCategories || [];
-      } else if (type === "animes") {
-        allItems = directCatalogCache.animes || [];
-        catList = directCatalogCache.animeCategories || [];
-      } else if (type === "sports") {
-        allItems = directCatalogCache.sports || [];
-        catList = directCatalogCache.sportsCategories || [];
-      } else if (type === "kids") {
-        allItems = directCatalogCache.kids || [];
-        catList = directCatalogCache.kidsCategories || [];
-      } else if (type === "releases") {
-        allItems = directCatalogCache.releases || [];
-        catList = directCatalogCache.releaseCategories || [];
+        catList = (directCatalogCache.liveCategories && directCatalogCache.liveCategories.length)
+          ? directCatalogCache.liveCategories
+          : getDistinctCategoriesFromItems(allItems);
+        defaultTitle = "Canais de TV ao Vivo";
       } else if (type === "favorites") {
         allItems = (typeof getFavoritesList === "function") ? getFavoritesList() : [];
+        catList = getDistinctCategoriesFromItems(allItems);
+        defaultTitle = "Minha Lista de Favoritos";
       } else {
         allItems = directCatalogCache.movies || [];
+        catList = getDistinctCategoriesFromItems(allItems);
+        defaultTitle = "Filmes";
       }
 
-      const catNames = ["Todos", ...(catList || []).map(c => c.category_name || c.name).filter(Boolean)];
-
-      if (chipsContainer && !append && catNames.length > 1) {
-        renderCatalogChips(catNames.slice(0, 30), type);
+      // Render the left vertical category sidebar (no canto, estilo IPTV Smarters)
+      if (!append) {
+        renderIptvCategorySidebar(type, catList, currentCatalogSubgroup);
       }
 
-      let activeCat = currentCatalogSubgroup;
+      // Filter items by category
       let items = allItems;
-      if (activeCat && activeCat !== "Todos") {
-        const catLow = activeCat.toLowerCase();
+      let activeCatName = "Todos";
+      if (currentCatalogSubgroup && currentCatalogSubgroup !== "Todos") {
+        const catKey = currentCatalogSubgroup.toLowerCase();
         items = allItems.filter(it => {
-          const g = (it.group || it.category || it.subgroup || it.name || it.title || "").toLowerCase();
-          return g.includes(catLow) || catLow.includes(g);
+          const g = (it.group || it.category || it.subgroup || "").toLowerCase();
+          return g === catKey || g.includes(catKey) || catKey.includes(g);
         });
+        const matched = catList.find(c => (c.raw || c.id || c.name || "").toLowerCase() === catKey);
+        activeCatName = matched ? matched.name : currentCatalogSubgroup;
       }
-      if (items.length === 0) {
-        items = allItems;
+
+      if (titleEl) {
+        titleEl.textContent = (activeCatName && activeCatName !== "Todos") ? activeCatName : defaultTitle;
+      }
+      if (countBadge) {
+        countBadge.textContent = `${items.length} ${items.length === 1 ? 'título' : (type === 'live' ? 'canais' : 'títulos')}`;
       }
 
       if (loadingState) loadingState.style.display = "none";
@@ -10206,8 +10311,9 @@ document.addEventListener("DOMContentLoaded", () => {
         return;
       }
 
-      items.slice(0, 200).forEach((item, idx) => {
-        const isLiveItem = item.type === "live" || type === "live" || type === "sports";
+      // Render cards into grid
+      items.slice(0, 350).forEach((item, idx) => {
+        const isLiveItem = item.type === "live" || type === "live";
         const card = createNetflixCard(item, { isLive: isLiveItem }, 0, idx);
         grid.appendChild(card);
       });
@@ -11371,33 +11477,34 @@ document.addEventListener("DOMContentLoaded", () => {
         }
       }
 
-      // C) CATALOG CONTAINER
+      // C) CATALOG CONTAINER (IPTV SMARTERS SPLIT VIEW - SIDEBAR NO CANTO)
       if (netCatalogContainer && netCatalogContainer.style.display !== "none") {
-        const chips = Array.from(document.querySelectorAll("#netCategoryChips .net-chip"));
+        const catItems = Array.from(document.querySelectorAll("#iptvCategoryList .iptv-cat-item"));
         const grid = document.getElementById("netCatalogGrid");
 
-        // If on category chips
-        if (chips.includes(focused)) {
-          const idx = chips.indexOf(focused);
-          if (keyCode === 37) { // Left
+        // If on category item in the left sidebar
+        if (catItems.includes(focused)) {
+          const idx = catItems.indexOf(focused);
+          if (keyCode === 38) { // Up in categories
             e.preventDefault();
-            if (idx === 0) {
-              if (netflixSidebar) {
-                netflixSidebar.classList.add("expanded");
-                const activeNav = netflixSidebar.querySelector(".net-sidebar-item.active") || netflixSidebar.querySelector(".net-sidebar-item");
-                if (activeNav) activeNav.focus();
-              }
-            } else {
-              chips[idx - 1].focus();
+            if (idx > 0) catItems[idx - 1].focus();
+            return;
+          }
+          if (keyCode === 40) { // Down in categories
+            e.preventDefault();
+            if (idx < catItems.length - 1) catItems[idx + 1].focus();
+            return;
+          }
+          if (keyCode === 37) { // Left to main Streamflix sidebar
+            e.preventDefault();
+            if (netflixSidebar) {
+              netflixSidebar.classList.add("expanded");
+              const activeNav = netflixSidebar.querySelector(".net-sidebar-item.active") || netflixSidebar.querySelector(".net-sidebar-item");
+              if (activeNav) activeNav.focus();
             }
             return;
           }
-          if (keyCode === 39) { // Right
-            e.preventDefault();
-            if (idx < chips.length - 1) chips[idx + 1].focus();
-            return;
-          }
-          if (keyCode === 40) { // Down into grid
+          if (keyCode === 39) { // Right into content grid
             e.preventDefault();
             const firstCard = grid ? grid.querySelector(".net-card, .epg-channel-card") : null;
             if (firstCard) firstCard.focus();
@@ -11416,9 +11523,10 @@ document.addEventListener("DOMContentLoaded", () => {
           if (dir) {
             e.preventDefault();
             const moved = navigateGrid(focused, grid, dir, ".net-card, .epg-channel-card", 5);
-            if (!moved && dir === "up") {
-              const activeChip = document.querySelector("#netCategoryChips .net-chip.active") || chips[0];
-              if (activeChip) activeChip.focus();
+            if (!moved && dir === "left") {
+              // Return to the active category item in the left sidebar!
+              const activeCat = document.querySelector("#iptvCategoryList .iptv-cat-item.active") || catItems[0];
+              if (activeCat) activeCat.focus();
             }
             return;
           }
