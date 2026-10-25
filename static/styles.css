@@ -5785,3 +5785,160 @@ html, body {
   color: #94a3b8;
   font-weight: 600;
 }
+
+/* ==========================================================================
+   PRIME IPTV ON-SCREEN VIRTUAL KEYBOARD & PROFILE MANAGEMENT STYLES
+   ========================================================================== */
+
+.iptv-search-keyboard {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  background: rgba(15, 23, 42, 0.75);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 14px;
+  padding: 14px 16px;
+  margin: 14px 0 16px 0;
+  max-width: 900px;
+}
+
+.iptv-kb-row {
+  display: flex;
+  flex-direction: row;
+  gap: 8px;
+  justify-content: flex-start;
+  align-items: center;
+}
+
+.iptv-kb-key {
+  min-width: 44px;
+  height: 44px;
+  background: rgba(30, 41, 59, 0.9);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: #f1f5f9;
+  font-size: 1.05rem;
+  font-weight: 700;
+  border-radius: 8px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
+  user-select: none;
+}
+
+.iptv-kb-key:hover,
+.iptv-kb-key:focus,
+.iptv-kb-key.tv-focused {
+  background: #00d2ff !important;
+  color: #031120 !important;
+  border-color: #38bdf8 !important;
+  transform: scale(1.08);
+  box-shadow: 0 0 16px rgba(0, 210, 255, 0.6);
+  outline: none !important;
+}
+
+.iptv-kb-key.action {
+  padding: 0 14px;
+  font-size: 0.85rem;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+}
+
+.iptv-kb-key.action.space {
+  min-width: 130px;
+  background: rgba(30, 41, 59, 0.95);
+}
+
+.iptv-kb-key.action.back {
+  min-width: 100px;
+  background: rgba(239, 68, 68, 0.25);
+  border-color: rgba(239, 68, 68, 0.4);
+  color: #fca5a5;
+}
+
+.iptv-kb-key.action.clear {
+  min-width: 80px;
+  background: rgba(148, 163, 184, 0.2);
+}
+
+/* Manage Profiles Modal Elements */
+.manage-profile-item {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  background: rgba(30, 41, 59, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  padding: 10px 14px;
+}
+
+.manage-profile-avatar {
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.4rem;
+  font-weight: bold;
+  color: #fff;
+  flex-shrink: 0;
+}
+
+.manage-profile-input {
+  flex: 1;
+  background: rgba(15, 23, 42, 0.9);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 8px;
+  color: #fff;
+  padding: 8px 12px;
+  font-size: 0.95rem;
+}
+
+.manage-profile-input:focus,
+.manage-profile-input.tv-focused {
+  border-color: #00d2ff !important;
+  box-shadow: 0 0 12px rgba(0, 210, 255, 0.5);
+  outline: none;
+}
+
+.manage-profile-actions {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.btn-manage-act {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: #e2e8f0;
+  border-radius: 6px;
+  padding: 6px 12px;
+  font-size: 0.85rem;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.btn-manage-act:hover,
+.btn-manage-act:focus,
+.btn-manage-act.tv-focused {
+  background: #00d2ff;
+  color: #020617;
+  border-color: #38bdf8;
+  outline: none;
+}
+
+.btn-manage-act.danger {
+  color: #f87171;
+  border-color: rgba(248, 113, 113, 0.3);
+}
+
+.btn-manage-act.danger:hover,
+.btn-manage-act.danger:focus,
+.btn-manage-act.danger.tv-focused {
+  background: #ef4444;
+  color: #fff;
+}
