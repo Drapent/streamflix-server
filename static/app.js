@@ -11944,3 +11944,160 @@ document.addEventListener("DOMContentLoaded", () => {
   } else {
     setupIptvSearchVirtualKeyboard();
   }
+
+
+// ==============================================================================
+// STREAMFLIX PRIME IPTV SELF-HEALING & DYNAMIC DOM RESTRUCTURING ENGINE
+// Garante 100% que mesmo em Smart TVs com index.html antigo em cache/WGT,
+// todos os novos componentes (Teclado Virtual, Barra de Categorias, Gerenciar Perfis)
+// sejam criados e injetados dinamicamente no DOM sem falhas!
+// ==============================================================================
+(function initPrimeIptvSelfHealing() {
+  function applySelfHealing() {
+    console.log("[Prime IPTV] Executando motor de auto-reestruturação visual...");
+
+    // 1. LIMPEZA TOTAL DE RESQUÍCIOS DE INFANTIL E ESPORTE NO DOM
+    document.querySelectorAll(".sf-chip, .sf-feature-item, .live-cat-item, button, span, strong").forEach(el => {
+      const txt = (el.textContent || "").trim().toLowerCase();
+      if (txt === "esportes" || txt === "⚽ esportes" || txt === "? esportes" ||
+          txt === "infantil" || txt === "🎮 infantil" || txt === "🧸 infantil" || txt === "?? infantil") {
+        el.remove();
+      }
+    });
+
+    // 2. GARANTIR INJEÇÃO DO TECLADO VIRTUAL DE BUSCA NO DOM
+    const searchHeader = document.querySelector(".net-search-header-box");
+    if (searchHeader && !document.getElementById("iptvSearchKeyboard")) {
+      const kbDiv = document.createElement("div");
+      kbDiv.className = "iptv-search-keyboard";
+      kbDiv.id = "iptvSearchKeyboard";
+      kbDiv.innerHTML = `
+        <div class="iptv-kb-row">
+          <button class="iptv-kb-key" data-key="A" tabindex="0">A</button>
+          <button class="iptv-kb-key" data-key="B" tabindex="0">B</button>
+          <button class="iptv-kb-key" data-key="C" tabindex="0">C</button>
+          <button class="iptv-kb-key" data-key="D" tabindex="0">D</button>
+          <button class="iptv-kb-key" data-key="E" tabindex="0">E</button>
+          <button class="iptv-kb-key" data-key="F" tabindex="0">F</button>
+          <button class="iptv-kb-key" data-key="G" tabindex="0">G</button>
+          <button class="iptv-kb-key" data-key="1" tabindex="0">1</button>
+          <button class="iptv-kb-key" data-key="2" tabindex="0">2</button>
+          <button class="iptv-kb-key" data-key="3" tabindex="0">3</button>
+        </div>
+        <div class="iptv-kb-row">
+          <button class="iptv-kb-key" data-key="H" tabindex="0">H</button>
+          <button class="iptv-kb-key" data-key="I" tabindex="0">I</button>
+          <button class="iptv-kb-key" data-key="J" tabindex="0">J</button>
+          <button class="iptv-kb-key" data-key="K" tabindex="0">K</button>
+          <button class="iptv-kb-key" data-key="L" tabindex="0">L</button>
+          <button class="iptv-kb-key" data-key="M" tabindex="0">M</button>
+          <button class="iptv-kb-key" data-key="N" tabindex="0">N</button>
+          <button class="iptv-kb-key" data-key="4" tabindex="0">4</button>
+          <button class="iptv-kb-key" data-key="5" tabindex="0">5</button>
+          <button class="iptv-kb-key" data-key="6" tabindex="0">6</button>
+        </div>
+        <div class="iptv-kb-row">
+          <button class="iptv-kb-key" data-key="O" tabindex="0">O</button>
+          <button class="iptv-kb-key" data-key="P" tabindex="0">P</button>
+          <button class="iptv-kb-key" data-key="Q" tabindex="0">Q</button>
+          <button class="iptv-kb-key" data-key="R" tabindex="0">R</button>
+          <button class="iptv-kb-key" data-key="S" tabindex="0">S</button>
+          <button class="iptv-kb-key" data-key="T" tabindex="0">T</button>
+          <button class="iptv-kb-key" data-key="U" tabindex="0">U</button>
+          <button class="iptv-kb-key" data-key="7" tabindex="0">7</button>
+          <button class="iptv-kb-key" data-key="8" tabindex="0">8</button>
+          <button class="iptv-kb-key" data-key="9" tabindex="0">9</button>
+        </div>
+        <div class="iptv-kb-row">
+          <button class="iptv-kb-key" data-key="V" tabindex="0">V</button>
+          <button class="iptv-kb-key" data-key="W" tabindex="0">W</button>
+          <button class="iptv-kb-key" data-key="X" tabindex="0">X</button>
+          <button class="iptv-kb-key" data-key="Y" tabindex="0">Y</button>
+          <button class="iptv-kb-key" data-key="Z" tabindex="0">Z</button>
+          <button class="iptv-kb-key" data-key="0" tabindex="0">0</button>
+          <button class="iptv-kb-key action space" data-key="SPACE" tabindex="0">ESPAÇO</button>
+          <button class="iptv-kb-key action back" data-key="BACK" tabindex="0">⌫ APAGAR</button>
+          <button class="iptv-kb-key action clear" data-key="CLEAR" tabindex="0">LIMPAR</button>
+        </div>
+      `;
+      const quickTags = document.getElementById("netSearchQuickTags");
+      if (quickTags) {
+        searchHeader.insertBefore(kbDiv, quickTags);
+      } else {
+        searchHeader.appendChild(kbDiv);
+      }
+      try { setupIptvSearchVirtualKeyboard(); } catch(e) {}
+    }
+
+    // 3. GARANTIR INJEÇÃO DO MODAL DE GERENCIAR PERFIS NO DOM
+    if (!document.getElementById("manageProfilesModal")) {
+      const mDiv = document.createElement("div");
+      mDiv.className = "modal-backdrop";
+      mDiv.id = "manageProfilesModal";
+      mDiv.style.display = "none";
+      mDiv.innerHTML = `
+        <div class="modal-card" style="max-width: 580px;">
+          <div class="modal-header">
+            <div style="display:flex; align-items:center; gap:10px;">
+              <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="#00d2ff" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+              <h3 style="margin:0; font-size:1.25rem;">Gerenciar Perfis da Conta</h3>
+            </div>
+            <button id="btnCloseManageProfilesModal" class="btn-close" tabindex="0">&times;</button>
+          </div>
+          <div class="modal-body" style="padding: 24px 20px; display:flex; flex-direction:column; gap:18px;">
+            <p style="margin:0; font-size:0.9rem; color:#94a3b8;">Altere o nome dos perfis, troque a cor ou adicione novos perfis:</p>
+            <div class="manage-profiles-list" id="manageProfilesModalList" style="display:flex; flex-direction:column; gap:12px;"></div>
+            <div style="display:flex; gap:12px; margin-top:8px;">
+              <button id="btnManageAddNewProfile" class="btn-submit-modal" style="flex:1; background:#0284c7;" tabindex="0">+ Criar Novo Perfil</button>
+              <button id="btnManageDone" class="btn-submit-modal" style="flex:1;" tabindex="0">Concluir</button>
+            </div>
+          </div>
+        </div>
+      `;
+      document.body.appendChild(mDiv);
+
+      const btnClose = document.getElementById("btnCloseManageProfilesModal");
+      if (btnClose) btnClose.onclick = closeManageProfilesModal;
+      const btnDone = document.getElementById("btnManageDone");
+      if (btnDone) btnDone.onclick = closeManageProfilesModal;
+      const btnAdd = document.getElementById("btnManageAddNewProfile");
+      if (btnAdd) btnAdd.onclick = () => { closeManageProfilesModal(); openAddProfileModal(); };
+    }
+
+    // 4. GARANTIR ESTRUTURA SPLIT IPTV EM netCatalogContainer
+    const catContainer = document.getElementById("netCatalogContainer");
+    if (catContainer && !document.getElementById("iptvCategorySidebar")) {
+      const origHtml = catContainer.innerHTML;
+      catContainer.className = "net-catalog-container iptv-catalog-split";
+      catContainer.innerHTML = `
+        <aside class="iptv-category-sidebar" id="iptvCategorySidebar">
+          <div class="iptv-cat-sidebar-header">
+            <span class="iptv-cat-section-badge" id="iptvCatSectionBadge">VOD</span>
+            <h3 class="iptv-cat-sidebar-title" id="iptvCatSidebarTitle">Categorias</h3>
+          </div>
+          <div class="iptv-category-list" id="iptvCategoryList" tabindex="0"></div>
+        </aside>
+        <main class="iptv-catalog-main">
+          ${origHtml}
+        </main>
+      `;
+    }
+
+    // 5. ATIVAR CLIQUE EM "GERENCIAR PERFIS"
+    const btnManage = document.getElementById("btnManageProfilesBtn") || document.getElementById("btnManageProfilesToggle");
+    if (btnManage) {
+      btnManage.onclick = (e) => {
+        e.preventDefault();
+        openManageProfilesModal();
+      };
+    }
+  }
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", applySelfHealing);
+  } else {
+    applySelfHealing();
+  }
+  // Re-executa após 300ms para garantir qualquer injeção tardia
+  setTimeout(applySelfHealing, 300);
+})();
