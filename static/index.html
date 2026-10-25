@@ -98,9 +98,9 @@
             <span class="sf-chip"><span class="chip-ico">🎬</span> Filmes</span>
             <span class="sf-chip"><span class="chip-ico">📺</span> Séries</span>
             <span class="sf-chip"><span class="chip-ico">📡</span> Canais de TV</span>
-            <span class="sf-chip"><span class="chip-ico">⚽</span> Esportes</span>
-            <span class="sf-chip"><span class="chip-ico">🎮</span> Infantil</span>
-            <span class="sf-chip"><span class="chip-ico">➕</span> E muito mais!</span>
+            <span class="sf-chip"><span class="chip-ico">⚡</span> 4K Ultra HD</span>
+            <span class="sf-chip"><span class="chip-ico">🌟</span> Lançamentos</span>
+            <span class="sf-chip"><span class="chip-ico">➕</span> Muito Mais</span>
           </div>
         </div>
 
@@ -366,21 +366,21 @@
 
           <div class="sf-feature-item">
             <div class="sf-feat-circle">
-              <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="#FF1E27" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/></svg>
+              <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="#00d2ff" stroke-width="2"><circle cx="12" cy="12" r="10"/><polygon points="10 8 16 12 10 16 10 8" fill="#00d2ff"/></svg>
             </div>
             <div class="sf-feat-desc">
-              <strong>Esportes</strong>
-              <span>Futebol, MMA, F1, NBA e muito mais.</span>
+              <strong>Qualidade 4K UHD</strong>
+              <span>Transmissão ultrarrápida sem travamentos.</span>
             </div>
           </div>
 
           <div class="sf-feature-item">
             <div class="sf-feat-circle">
-              <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="#FF1E27" stroke-width="2"><circle cx="12" cy="12" r="10"/><circle cx="9" cy="9" r="1" fill="#FF1E27"/><circle cx="15" cy="9" r="1" fill="#FF1E27"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/></svg>
+              <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="#00d2ff" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
             </div>
             <div class="sf-feat-desc">
-              <strong>Infantil</strong>
-              <span>Diversão garantida para toda a família.</span>
+              <strong>Guia EPG ao Vivo</strong>
+              <span>Programação em tempo real para todos os canais.</span>
             </div>
           </div>
 
@@ -708,8 +708,59 @@
           <div class="net-search-header-box">
             <div class="net-search-bar-inner">
               <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="#00d2ff" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-              <input type="text" id="netSearchInputMain" class="net-search-main-input" placeholder="Buscar filmes, séries, canais de TV, animes..." tabindex="0" autocomplete="off" />
+              <input type="text" id="netSearchInputMain" class="net-search-main-input" placeholder="Buscar filmes, séries, canais de TV..." tabindex="0" autocomplete="off" />
               <button id="netSearchClearBtn" class="net-search-clear-btn" tabindex="0" title="Limpar busca">✕</button>
+            </div>
+
+            <!-- TECLADO VIRTUAL INTEGRADO PARA CONTROLE REMOTO SMART TV (Estilo Prime IPTV / Netflix TV) -->
+            <div class="iptv-search-keyboard" id="iptvSearchKeyboard">
+              <div class="iptv-kb-row">
+                <button class="iptv-kb-key" data-key="A" tabindex="0">A</button>
+                <button class="iptv-kb-key" data-key="B" tabindex="0">B</button>
+                <button class="iptv-kb-key" data-key="C" tabindex="0">C</button>
+                <button class="iptv-kb-key" data-key="D" tabindex="0">D</button>
+                <button class="iptv-kb-key" data-key="E" tabindex="0">E</button>
+                <button class="iptv-kb-key" data-key="F" tabindex="0">F</button>
+                <button class="iptv-kb-key" data-key="G" tabindex="0">G</button>
+                <button class="iptv-kb-key" data-key="1" tabindex="0">1</button>
+                <button class="iptv-kb-key" data-key="2" tabindex="0">2</button>
+                <button class="iptv-kb-key" data-key="3" tabindex="0">3</button>
+              </div>
+              <div class="iptv-kb-row">
+                <button class="iptv-kb-key" data-key="H" tabindex="0">H</button>
+                <button class="iptv-kb-key" data-key="I" tabindex="0">I</button>
+                <button class="iptv-kb-key" data-key="J" tabindex="0">J</button>
+                <button class="iptv-kb-key" data-key="K" tabindex="0">K</button>
+                <button class="iptv-kb-key" data-key="L" tabindex="0">L</button>
+                <button class="iptv-kb-key" data-key="M" tabindex="0">M</button>
+                <button class="iptv-kb-key" data-key="N" tabindex="0">N</button>
+                <button class="iptv-kb-key" data-key="4" tabindex="0">4</button>
+                <button class="iptv-kb-key" data-key="5" tabindex="0">5</button>
+                <button class="iptv-kb-key" data-key="6" tabindex="0">6</button>
+              </div>
+              <div class="iptv-kb-row">
+                <button class="iptv-kb-key" data-key="O" tabindex="0">O</button>
+                <button class="iptv-kb-key" data-key="P" tabindex="0">P</button>
+                <button class="iptv-kb-key" data-key="Q" tabindex="0">Q</button>
+                <button class="iptv-kb-key" data-key="R" tabindex="0">R</button>
+                <button class="iptv-kb-key" data-key="S" tabindex="0">S</button>
+                <button class="iptv-kb-key" data-key="T" tabindex="0">T</button>
+                <button class="iptv-kb-key" data-key="U" tabindex="0">U</button>
+                <button class="iptv-kb-key" data-key="7" tabindex="0">7</button>
+                <button class="iptv-kb-key" data-key="8" tabindex="0">8</button>
+                <button class="iptv-kb-key" data-key="9" tabindex="0">9</button>
+              </div>
+              <div class="iptv-kb-row">
+                <button class="iptv-kb-key" data-key="V" tabindex="0">V</button>
+                <button class="iptv-kb-key" data-key="W" tabindex="0">W</button>
+                <button class="iptv-kb-key" data-key="X" tabindex="0">X</button>
+                <button class="iptv-kb-key" data-key="Y" tabindex="0">Y</button>
+                <button class="iptv-kb-key" data-key="Z" tabindex="0">Z</button>
+                <button class="iptv-kb-key" data-key="0" tabindex="0">0</button>
+                <button class="iptv-kb-key action space" data-key="SPACE" tabindex="0">ESPAÇO</button>
+                <button class="iptv-kb-key action back" data-key="BACK" tabindex="0">⌫ APAGAR</button>
+                <button class="iptv-kb-key action clear" data-key="CLEAR" tabindex="0">LIMPAR</button>
+              </div>
             </div>
             
             <div class="net-search-quick-tags" id="netSearchQuickTags">
@@ -717,10 +768,7 @@
               <button class="sf-chip" data-search-tag="Filmes" tabindex="0">🎬 Filmes</button>
               <button class="sf-chip" data-search-tag="Séries" tabindex="0">📺 Séries</button>
               <button class="sf-chip" data-search-tag="Ao Vivo" tabindex="0">📡 Canais</button>
-              <button class="sf-chip" data-search-tag="Anime" tabindex="0">⚡ Animes</button>
-              <button class="sf-chip" data-search-tag="Esporte" tabindex="0">⚽ Esportes</button>
               <button class="sf-chip" data-search-tag="4K" tabindex="0">🌟 4K UHD</button>
-              <button class="sf-chip" data-search-tag="Infantil" tabindex="0">🧸 Infantil</button>
             </div>
             
             <div class="net-search-status-bar" id="netSearchStatusBar">
@@ -1551,13 +1599,36 @@
             <!-- Avatars rendered by JS -->
           </div>
         </div>
-        <div style="display:flex; align-items:center; gap:10px; margin-top:4px;">
-          <input type="checkbox" id="chkProfileKids" style="width:18px; height:18px; accent-color:#00d2ff; cursor:pointer;">
-          <label for="chkProfileKids" style="font-size:0.85rem; color:#e2e8f0; cursor:pointer;">Perfil Infantil / Kids (Filmes e Séries livres)</label>
-        </div>
+
         <div style="display:flex; gap:10px; margin-top:8px;">
           <button id="btnSaveProfile" class="btn-submit-modal" style="flex:1;">Salvar Perfil</button>
           <button id="btnDeleteProfile" class="btn-delete-modal" style="display:none;">Excluir</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  
+  <!-- ====================================================================
+       MODAL GERENCIAR PERFIS (100% OPERACIONAL NA TV E PC)
+       ==================================================================== -->
+  <div class="modal-backdrop" id="manageProfilesModal" style="display:none;">
+    <div class="modal-card" style="max-width: 580px;">
+      <div class="modal-header">
+        <div style="display:flex; align-items:center; gap:10px;">
+          <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="#00d2ff" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+          <h3 style="margin:0; font-size:1.25rem;">Gerenciar Perfis da Conta</h3>
+        </div>
+        <button id="btnCloseManageProfilesModal" class="btn-close" tabindex="0">&times;</button>
+      </div>
+      <div class="modal-body" style="padding: 24px 20px; display:flex; flex-direction:column; gap:18px;">
+        <p style="margin:0; font-size:0.9rem; color:#94a3b8;">Altere o nome dos perfis, troque a cor ou adicione novos perfis para a sua família:</p>
+        <div class="manage-profiles-list" id="manageProfilesModalList" style="display:flex; flex-direction:column; gap:12px;">
+          <!-- Itens preenchidos via JS com Nome, Avatar e botões Editar/Excluir -->
+        </div>
+        <div style="display:flex; gap:12px; margin-top:8px;">
+          <button id="btnManageAddNewProfile" class="btn-submit-modal" style="flex:1; background:#0284c7;" tabindex="0">+ Criar Novo Perfil</button>
+          <button id="btnManageDone" class="btn-submit-modal" style="flex:1;" tabindex="0">Concluir</button>
         </div>
       </div>
     </div>
@@ -1670,7 +1741,7 @@
        ==================================================================== -->
   <script id="sfOtaBootloader">
   (function() {
-    var LOCAL_BUILD_TS = 1761338250;
+    var LOCAL_BUILD_TS = 1792945000;
     var OTA_VERSION_URLS = [
       "https://raw.githubusercontent.com/Drapent/streamflix-server/main/version.json",
       "https://cdn.jsdelivr.net/gh/Drapent/streamflix-server@main/version.json",
