@@ -8356,7 +8356,7 @@ document.addEventListener("DOMContentLoaded", () => {
       cast: item.cast || "Elenco Principal",
       duration: item.duration || item.runtime || "2h 05m",
       year: parsedYear,
-      age: item.age || (genres.includes("Infantil") ? "L" : (genres.includes("Terror") ? "18" : "14")),
+      age: item.age || (genres.includes("Livre") ? "L" : (genres.includes("Terror") ? "18" : "14")),
       seasons: item.seasons_count || (item.seasons ? item.seasons.length : 1),
       episodes: item.episodes_count || 10,
       genres: genres
@@ -10133,9 +10133,7 @@ document.addEventListener("DOMContentLoaded", () => {
         series: "Séries de TV",
         live: "Canais de TV ao Vivo",
         animes: "Universo Animes",
-        sports: "Canais e Eventos de Esportes",
-        kids: "Espaço Infantil & Desenhos",
-        releases: "Lançamentos e Cinema",
+                        releases: "Lançamentos e Cinema",
         favorites: "Minha Lista de Favoritos",
         trending: "Bombando na Streamflix"
       };
@@ -11724,10 +11722,8 @@ document.addEventListener("DOMContentLoaded", () => {
         if (t === "séries" || t === "series") return type === "series";
         if (t === "ao vivo" || t === "canais") return type === "live";
         if (t === "anime") return grp.includes("anime") || nm.includes("anime");
-        if (t === "esporte") return grp.includes("esporte") || grp.includes("sport") || grp.includes("premiere") || grp.includes("espn") || grp.includes("futebol");
-        if (t === "4k") return nm.includes("4k") || grp.includes("4k") || nm.includes("uhd");
-        if (t === "infantil") return grp.includes("infantil") || grp.includes("desenho") || grp.includes("disney");
-        return grp.includes(t) || nm.includes(t);
+                if (t === "4k") return nm.includes("4k") || grp.includes("4k") || nm.includes("uhd");
+                return grp.includes(t) || nm.includes(t);
       });
     }
 
