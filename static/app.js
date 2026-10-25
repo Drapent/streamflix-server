@@ -7482,12 +7482,12 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     directCatalogCache.loadingPromise = (async () => {
-      // 1. Tenta carregar do Cache Local Ultra Rápido (0ms)
+      // 1. Tenta carregar do Cache Local (Verifica Versão 6 Master Rich)
       try {
-        const cachedRaw = localStorage.getItem("iptv_fast_catalog_cache");
+        const cachedRaw = localStorage.getItem("iptv_fast_catalog_cache_v6");
         if (cachedRaw) {
           const c = JSON.parse(cachedRaw);
-          if (c && (c.movies || c.series || c.live)) {
+          if (c && c.version >= 6 && c.live && c.live.length > 1000) {
             directCatalogCache.movies = c.movies || [];
             directCatalogCache.series = c.series || [];
             directCatalogCache.live = c.live || [];
@@ -7495,7 +7495,7 @@ document.addEventListener("DOMContentLoaded", () => {
             directCatalogCache.seriesCategories = c.seriesCategories || [];
             directCatalogCache.liveCategories = c.liveCategories || [];
             directCatalogCache.all = [...directCatalogCache.movies, ...directCatalogCache.series, ...directCatalogCache.live];
-            console.log(`[FastCatalog] Carregado do localStorage instantaneamente (0ms): ${directCatalogCache.all.length} itens.`);
+            console.log(`[FastCatalog V6] Carregado do cache instantaneamente (0ms): ${directCatalogCache.all.length} itens.`);
             return directCatalogCache;
           }
         }
@@ -7542,10 +7542,11 @@ document.addEventListener("DOMContentLoaded", () => {
               ];
 
               try {
-                localStorage.setItem("iptv_fast_catalog_cache", JSON.stringify({
-                  movies: directCatalogCache.movies.slice(0, 450),
-                  series: directCatalogCache.series.slice(0, 450),
-                  live: directCatalogCache.live.slice(0, 400),
+                localStorage.setItem("iptv_fast_catalog_cache_v6", JSON.stringify({
+                  version: 6,
+                  movies: directCatalogCache.movies,
+                  series: directCatalogCache.series,
+                  live: directCatalogCache.live,
                   movieCategories: directCatalogCache.movieCategories,
                   seriesCategories: directCatalogCache.seriesCategories,
                   liveCategories: directCatalogCache.liveCategories
@@ -10185,7 +10186,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const currentActive = activeCat || "Todos";
 
-    // 1. "Todos" item (e.g. "Todos os Canais", "Todos os Filmes", "Todas as Séries")
+    // 1. "Todos" item
     let totalCount = 0;
     if (type === "movies") totalCount = (directCatalogCache.movies || []).length;
     else if (type === "series") totalCount = (directCatalogCache.series || []).length;
@@ -10199,15 +10200,13 @@ document.addEventListener("DOMContentLoaded", () => {
     const allItem = document.createElement("button");
     allItem.className = `iptv-cat-item ${currentActive === "Todos" ? "active" : ""}`;
     allItem.tabIndex = 0;
+    allItem.dataset.catId = "Todos";
     allItem.innerHTML = `
       <span class="iptv-cat-name">${todosLabel}</span>
       <span class="iptv-cat-count">${totalCount}</span>
     `;
     allItem.addEventListener("click", () => {
-      currentCatalogSubgroup = "Todos";
-      catListEl.querySelectorAll(".iptv-cat-item").forEach(c => c.classList.remove("active"));
-      allItem.classList.add("active");
-      loadNetflixCatalogGrid(type, false);
+      selectIptvCategory("Todos", allItem, type);
     });
     catListEl.appendChild(allItem);
 
@@ -10223,23 +10222,37 @@ document.addEventListener("DOMContentLoaded", () => {
       const isActive = currentActive === catId || currentActive === catName;
       btn.className = `iptv-cat-item ${isActive ? "active" : ""}`;
       btn.tabIndex = 0;
+      btn.dataset.catId = catId;
       btn.innerHTML = `
         <span class="iptv-cat-name">${catName}</span>
         ${count ? `<span class="iptv-cat-count">${count}</span>` : ""}
       `;
 
       btn.addEventListener("click", () => {
-        currentCatalogSubgroup = catId;
-        catListEl.querySelectorAll(".iptv-cat-item").forEach(c => c.classList.remove("active"));
-        btn.classList.add("active");
-        loadNetflixCatalogGrid(type, false);
+        selectIptvCategory(catId, btn, type);
       });
 
       catListEl.appendChild(btn);
     });
   }
 
-  async function loadServerlessCatalogGrid(type, apiType, append) {
+  // Seleciona categoria preservando foco do controle remoto sem reconstruir a sidebar
+  function selectIptvCategory(catId, btnElement, type) {
+    currentCatalogSubgroup = catId;
+    const catListEl = document.getElementById("iptvCategoryList");
+    if (catListEl) {
+      catListEl.querySelectorAll(".iptv-cat-item").forEach(c => c.classList.remove("active"));
+    }
+    if (btnElement) {
+      btnElement.classList.add("active");
+      btnElement.focus();
+      btnElement.scrollIntoView({ block: "nearest", behavior: "smooth" });
+    }
+    renderCatalogCardsOnly(type);
+  }
+
+  // Renderiza SOMENTE a grade de cards da direita instantaneamente (0ms)
+  function renderCatalogCardsOnly(type) {
     const grid = document.getElementById("netCatalogGrid");
     const emptyState = document.getElementById("netCatalogEmpty");
     const loadingState = document.getElementById("netCatalogLoading");
@@ -10247,88 +10260,111 @@ document.addEventListener("DOMContentLoaded", () => {
     const titleEl = document.getElementById("netCatalogTitle");
     if (!grid) return;
 
+    grid.innerHTML = "";
+    if (emptyState) emptyState.style.display = "none";
+    if (loadingState) loadingState.style.display = "none";
+
+    let allItems = [];
+    let defaultTitle = "Catálogo";
+
+    if (type === "movies") {
+      allItems = directCatalogCache.movies || [];
+      defaultTitle = "Filmes de Sucesso";
+    } else if (type === "series") {
+      allItems = directCatalogCache.series || [];
+      defaultTitle = "Séries de TV";
+    } else if (type === "live") {
+      allItems = directCatalogCache.live || [];
+      defaultTitle = "Canais de TV ao Vivo";
+    } else if (type === "favorites") {
+      allItems = (typeof getFavoritesList === "function") ? getFavoritesList() : [];
+      defaultTitle = "Minha Lista de Favoritos";
+    } else {
+      allItems = directCatalogCache.movies || [];
+      defaultTitle = "Filmes";
+    }
+
+    let items = allItems;
+    let activeCatName = "Todos";
+    if (currentCatalogSubgroup && currentCatalogSubgroup !== "Todos") {
+      const catKey = currentCatalogSubgroup.toLowerCase();
+      items = allItems.filter(it => {
+        const g = (it.group || it.category || it.subgroup || "").toLowerCase();
+        return g === catKey || g.includes(catKey) || catKey.includes(g);
+      });
+      activeCatName = currentCatalogSubgroup;
+    }
+
+    if (titleEl) {
+      titleEl.textContent = (activeCatName && activeCatName !== "Todos") ? activeCatName : defaultTitle;
+    }
+    if (countBadge) {
+      countBadge.textContent = `${items.length} ${items.length === 1 ? 'título' : (type === 'live' ? 'canais' : 'títulos')}`;
+    }
+
+    if (items.length === 0) {
+      if (emptyState) emptyState.style.display = "block";
+      return;
+    }
+
+    items.slice(0, 350).forEach((item, idx) => {
+      const isLiveItem = item.type === "live" || type === "live";
+      const card = createNetflixCard(item, { isLive: isLiveItem }, 0, idx);
+      grid.appendChild(card);
+    });
+  }
+
+  async function loadServerlessCatalogGrid(type, apiType, append) {
+    const grid = document.getElementById("netCatalogGrid");
+    const loadingState = document.getElementById("netCatalogLoading");
+    if (!grid) return;
+
     if (!append) {
       grid.innerHTML = "";
       currentCatalogPage = 1;
     }
     if (loadingState) loadingState.style.display = "flex";
-    if (emptyState) emptyState.style.display = "none";
     currentCatalogLoading = true;
 
     try {
       await ensureDirectPlaylistLoaded();
 
-      let allItems = [];
       let catList = [];
-      let defaultTitle = "Catálogo";
-
       if (type === "movies") {
-        allItems = directCatalogCache.movies || [];
         catList = (directCatalogCache.movieCategories && directCatalogCache.movieCategories.length)
           ? directCatalogCache.movieCategories
-          : getDistinctCategoriesFromItems(allItems);
-        defaultTitle = "Filmes de Sucesso";
+          : getDistinctCategoriesFromItems(directCatalogCache.movies || []);
       } else if (type === "series") {
-        allItems = directCatalogCache.series || [];
         catList = (directCatalogCache.seriesCategories && directCatalogCache.seriesCategories.length)
           ? directCatalogCache.seriesCategories
-          : getDistinctCategoriesFromItems(allItems);
-        defaultTitle = "Séries de TV";
+          : getDistinctCategoriesFromItems(directCatalogCache.series || []);
       } else if (type === "live") {
-        allItems = directCatalogCache.live || [];
         catList = (directCatalogCache.liveCategories && directCatalogCache.liveCategories.length)
           ? directCatalogCache.liveCategories
-          : getDistinctCategoriesFromItems(allItems);
-        defaultTitle = "Canais de TV ao Vivo";
+          : getDistinctCategoriesFromItems(directCatalogCache.live || []);
       } else if (type === "favorites") {
-        allItems = (typeof getFavoritesList === "function") ? getFavoritesList() : [];
+        const allItems = (typeof getFavoritesList === "function") ? getFavoritesList() : [];
         catList = getDistinctCategoriesFromItems(allItems);
-        defaultTitle = "Minha Lista de Favoritos";
-      } else {
-        allItems = directCatalogCache.movies || [];
-        catList = getDistinctCategoriesFromItems(allItems);
-        defaultTitle = "Filmes";
       }
 
-      // Render the left vertical category sidebar (no canto, estilo IPTV Smarters)
+      // Constrói a barra lateral de categorias uma única vez
       if (!append) {
         renderIptvCategorySidebar(type, catList, currentCatalogSubgroup);
       }
 
-      // Filter items by category
-      let items = allItems;
-      let activeCatName = "Todos";
-      if (currentCatalogSubgroup && currentCatalogSubgroup !== "Todos") {
-        const catKey = currentCatalogSubgroup.toLowerCase();
-        items = allItems.filter(it => {
-          const g = (it.group || it.category || it.subgroup || "").toLowerCase();
-          return g === catKey || g.includes(catKey) || catKey.includes(g);
-        });
-        const matched = catList.find(c => (c.raw || c.id || c.name || "").toLowerCase() === catKey);
-        activeCatName = matched ? matched.name : currentCatalogSubgroup;
-      }
+      // Renderiza os cards da categoria selecionada
+      renderCatalogCardsOnly(type);
 
-      if (titleEl) {
-        titleEl.textContent = (activeCatName && activeCatName !== "Todos") ? activeCatName : defaultTitle;
-      }
-      if (countBadge) {
-        countBadge.textContent = `${items.length} ${items.length === 1 ? 'título' : (type === 'live' ? 'canais' : 'títulos')}`;
-      }
+      // Auto-focus na categoria ativa para navegação imediata por controle remoto
+      setTimeout(() => {
+        const activeCat = document.querySelector("#iptvCategoryList .iptv-cat-item.active") || document.querySelector("#iptvCategoryList .iptv-cat-item");
+        if (activeCat) {
+          activeCat.focus();
+          activeCat.classList.add("tv-focused");
+          activeCat.scrollIntoView({ block: "nearest", behavior: "smooth" });
+        }
+      }, 80);
 
-      if (loadingState) loadingState.style.display = "none";
-      currentCatalogLoading = false;
-
-      if (items.length === 0) {
-        if (emptyState) emptyState.style.display = "block";
-        return;
-      }
-
-      // Render cards into grid
-      items.slice(0, 350).forEach((item, idx) => {
-        const isLiveItem = item.type === "live" || type === "live";
-        const card = createNetflixCard(item, { isLive: isLiveItem }, 0, idx);
-        grid.appendChild(card);
-      });
     } catch (e) {
       console.warn("[ServerlessGrid] Erro ao carregar grade:", e);
       if (loadingState) loadingState.style.display = "none";
@@ -11498,14 +11534,30 @@ document.addEventListener("DOMContentLoaded", () => {
         // If on category item in the left sidebar
         if (catItems.includes(focused)) {
           const idx = catItems.indexOf(focused);
+
+          // OK / Enter (13 ou Samsung 29443) -> Seleciona a categoria imediatamente!
+          if (keyCode === 13 || keyCode === 29443) {
+            e.preventDefault();
+            focused.click();
+            return;
+          }
+
           if (keyCode === 38) { // Up in categories
             e.preventDefault();
-            if (idx > 0) catItems[idx - 1].focus();
+            if (idx > 0) {
+              catItems[idx - 1].focus();
+              catItems[idx - 1].classList.add("tv-focused");
+              catItems[idx - 1].scrollIntoView({ block: "nearest", behavior: "smooth" });
+            }
             return;
           }
           if (keyCode === 40) { // Down in categories
             e.preventDefault();
-            if (idx < catItems.length - 1) catItems[idx + 1].focus();
+            if (idx < catItems.length - 1) {
+              catItems[idx + 1].focus();
+              catItems[idx + 1].classList.add("tv-focused");
+              catItems[idx + 1].scrollIntoView({ block: "nearest", behavior: "smooth" });
+            }
             return;
           }
           if (keyCode === 37) { // Left to main Streamflix sidebar
@@ -11520,7 +11572,10 @@ document.addEventListener("DOMContentLoaded", () => {
           if (keyCode === 39) { // Right into content grid
             e.preventDefault();
             const firstCard = grid ? grid.querySelector(".net-card, .epg-channel-card") : null;
-            if (firstCard) firstCard.focus();
+            if (firstCard) {
+              firstCard.focus();
+              firstCard.classList.add("tv-focused");
+            }
             return;
           }
         }
@@ -11537,9 +11592,13 @@ document.addEventListener("DOMContentLoaded", () => {
             e.preventDefault();
             const moved = navigateGrid(focused, grid, dir, ".net-card, .epg-channel-card", 5);
             if (!moved && dir === "left") {
-              // Return to the active category item in the left sidebar!
+              // Retorna imediatamente à categoria ativa na barra lateral esquerda!
               const activeCat = document.querySelector("#iptvCategoryList .iptv-cat-item.active") || catItems[0];
-              if (activeCat) activeCat.focus();
+              if (activeCat) {
+                activeCat.focus();
+                activeCat.classList.add("tv-focused");
+                activeCat.scrollIntoView({ block: "nearest", behavior: "smooth" });
+              }
             }
             return;
           }

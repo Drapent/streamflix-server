@@ -5729,10 +5729,12 @@ html, body {
 .iptv-cat-item:hover,
 .iptv-cat-item:focus,
 .iptv-cat-item.tv-focused {
-  background: rgba(255, 255, 255, 0.1);
-  color: #ffffff;
-  border-color: rgba(0, 210, 255, 0.4);
-  transform: translateX(4px);
+  background: rgba(0, 210, 255, 0.35) !important;
+  color: #ffffff !important;
+  border: 2px solid #00d2ff !important;
+  transform: scale(1.03) translateX(6px) !important;
+  box-shadow: 0 0 22px rgba(0, 210, 255, 0.8) !important;
+  outline: none !important;
 }
 
 .iptv-cat-item.active {
