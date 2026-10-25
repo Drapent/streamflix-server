@@ -552,6 +552,10 @@
             <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
             <span class="net-item-label">Início</span>
           </button>
+          <button class="net-sidebar-item" id="netNavLive" data-nav="live" tabindex="0">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2"/><polyline points="8 2 12 7 16 2"/></svg>
+            <span class="net-item-label">Canais de TV</span>
+          </button>
           <button class="net-sidebar-item" id="netNavMovies" data-nav="movies" tabindex="0">
             <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="20" rx="2.18"/><line x1="7" y1="2" x2="7" y2="22"/><line x1="17" y1="2" x2="17" y2="22"/><line x1="2" y1="12" x2="22" y2="12"/><line x1="2" y1="7" x2="7" y2="7"/><line x1="2" y1="17" x2="7" y2="17"/><line x1="17" y1="7" x2="22" y2="7"/><line x1="17" y1="17" x2="22" y2="17"/></svg>
             <span class="net-item-label">Filmes</span>
@@ -559,26 +563,6 @@
           <button class="net-sidebar-item" id="netNavSeries" data-nav="series" tabindex="0">
             <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="15" rx="2.5"/><polyline points="17 2 12 7 7 2"/></svg>
             <span class="net-item-label">Séries</span>
-          </button>
-          <button class="net-sidebar-item" id="netNavReleases" data-nav="releases" tabindex="0">
-            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/><circle cx="12" cy="12" r="3" fill="currentColor"/></svg>
-            <span class="net-item-label">Lançamentos</span>
-          </button>
-          <button class="net-sidebar-item" id="netNavAnimes" data-nav="animes" tabindex="0">
-            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5c-5 0-8 3.5-8 8 0 4 3 7 8 7s8-3 8-7c0-4.5-3-8-8-8z"/><path d="M4 10l-2-6 7 3M20 10l2-6-7 3"/><circle cx="9" cy="13" r="1" fill="currentColor"/><circle cx="15" cy="13" r="1" fill="currentColor"/><path d="M10 16c1 .6 3 .6 4 0"/></svg>
-            <span class="net-item-label">Animes</span>
-          </button>
-          <button class="net-sidebar-item" id="netNavLive" data-nav="live" tabindex="0">
-            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2"/><polyline points="8 2 12 7 16 2"/></svg>
-            <span class="net-item-label">Canais de TV</span>
-          </button>
-          <button class="net-sidebar-item" id="netNavSports" data-nav="sports" tabindex="0">
-            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20M2 12a14.5 14.5 0 0 0 20 0M4.93 4.93l14.14 14.14M19.07 4.93L4.93 19.07"/></svg>
-            <span class="net-item-label">Esportes</span>
-          </button>
-          <button class="net-sidebar-item" id="netNavKids" data-nav="kids" tabindex="0">
-            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>
-            <span class="net-item-label">Infantil</span>
           </button>
           <button class="net-sidebar-item" id="netNavFavorites" data-nav="favorites" tabindex="0">
             <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 5v14M5 12h14"/></svg>
@@ -754,25 +738,39 @@
         </section>
 
         <!-- Dynamic View: Category Catalog Grid (for Séries, Filmes, TV ao Vivo, Minha Lista, Busca) -->
-        <section id="netCatalogContainer" class="net-catalog-container" style="display:none;">
-          <div class="net-catalog-header">
-            <h2 class="net-catalog-title" id="netCatalogTitle">Catálogo</h2>
-            <div class="net-category-chips" id="netCategoryChips">
-              <!-- Category filter buttons -->
+        <section id="netCatalogContainer" class="net-catalog-container iptv-catalog-split" style="display:none;">
+          <!-- Left Column: Category Sidebar (no canto, estilo IPTV Smarters / TiviMate) -->
+          <aside class="iptv-category-sidebar" id="iptvCategorySidebar">
+            <div class="iptv-cat-sidebar-header">
+              <span class="iptv-cat-section-badge" id="iptvCatSectionBadge">Séries</span>
+              <h3 class="iptv-cat-sidebar-title" id="iptvCatSidebarTitle">Categorias</h3>
             </div>
-          </div>
+            <div class="iptv-category-list" id="iptvCategoryList" tabindex="0">
+              <!-- Preenchido dinamicamente com categorias e badges de contagem -->
+            </div>
+          </aside>
 
-          <div class="net-catalog-grid" id="netCatalogGrid">
-            <!-- Dynamic 2:3 posters or 16:9 channel cards -->
-          </div>
+          <!-- Right Column: Content Area (Header + Grid) -->
+          <main class="iptv-catalog-main">
+            <div class="net-catalog-header">
+              <div class="net-catalog-title-wrap">
+                <h2 class="net-catalog-title" id="netCatalogTitle">Todas as Séries</h2>
+                <span class="net-catalog-count-badge" id="netCatalogCountBadge">0 títulos</span>
+              </div>
+            </div>
 
-          <div class="net-catalog-empty" id="netCatalogEmpty" style="display:none;">
-            Nenhum conteúdo encontrado.
-          </div>
-          <div class="net-catalog-loading" id="netCatalogLoading" style="display:none;">
-            <div class="net-spinner"></div>
-            <span>Carregando títulos...</span>
-          </div>
+            <div class="net-catalog-grid" id="netCatalogGrid">
+              <!-- Cards dinâmicos 2:3 ou 16:9 -->
+            </div>
+
+            <div class="net-catalog-empty" id="netCatalogEmpty" style="display:none;">
+              Nenhum conteúdo encontrado nesta categoria.
+            </div>
+            <div class="net-catalog-loading" id="netCatalogLoading" style="display:none;">
+              <div class="net-spinner"></div>
+              <span>Carregando títulos...</span>
+            </div>
+          </main>
         </section>
 
         <!-- Dynamic View: Downloads Manager Section (Assistir Offline) -->
