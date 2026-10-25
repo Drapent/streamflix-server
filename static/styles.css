@@ -5626,3 +5626,162 @@ html, body {
   color: #94a3b8;
   font-weight: 500;
 }
+
+
+/* ==========================================================================
+   IPTV SMARTERS / STREAMFLIX SPLIT LAYOUT (SIDEBAR DE CATEGORIAS NO CANTO)
+   ========================================================================== */
+.iptv-catalog-split {
+  display: flex !important;
+  flex-direction: row !important;
+  gap: 28px !important;
+  padding: 24px 36px 60px 24px !important;
+  min-height: calc(100vh - 80px) !important;
+  box-sizing: border-box !important;
+}
+
+.iptv-category-sidebar {
+  width: 280px;
+  min-width: 260px;
+  max-width: 300px;
+  background: rgba(15, 23, 42, 0.85);
+  backdrop-filter: blur(25px);
+  -webkit-backdrop-filter: blur(25px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 18px;
+  padding: 18px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.5);
+  height: calc(100vh - 120px);
+  position: sticky;
+  top: 20px;
+  box-sizing: border-box;
+  flex-shrink: 0;
+}
+
+.iptv-cat-sidebar-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 6px 12px 6px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.iptv-cat-section-badge {
+  font-size: 0.78rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  padding: 4px 10px;
+  border-radius: 6px;
+  background: rgba(0, 210, 255, 0.15);
+  color: #00d2ff;
+  border: 1px solid rgba(0, 210, 255, 0.35);
+}
+
+.iptv-cat-sidebar-title {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #f8fafc;
+  margin: 0;
+}
+
+.iptv-category-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding-right: 4px;
+  flex: 1;
+}
+
+.iptv-category-list::-webkit-scrollbar {
+  width: 5px;
+}
+
+.iptv-category-list::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 4px;
+}
+
+.iptv-cat-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 11px 13px;
+  border-radius: 12px;
+  background: transparent;
+  border: 1px solid transparent;
+  color: #cbd5e1;
+  font-size: 0.92rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  text-align: left;
+  outline: none;
+  font-family: inherit;
+  user-select: none;
+}
+
+.iptv-cat-item:hover,
+.iptv-cat-item:focus,
+.iptv-cat-item.tv-focused {
+  background: rgba(255, 255, 255, 0.1);
+  color: #ffffff;
+  border-color: rgba(0, 210, 255, 0.4);
+  transform: translateX(4px);
+}
+
+.iptv-cat-item.active {
+  background: linear-gradient(135deg, rgba(0, 210, 255, 0.25), rgba(30, 58, 138, 0.45));
+  border-color: #00d2ff;
+  color: #ffffff;
+  box-shadow: 0 4px 15px rgba(0, 210, 255, 0.25);
+  font-weight: 700;
+}
+
+.iptv-cat-name {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex: 1;
+  padding-right: 8px;
+}
+
+.iptv-cat-count {
+  font-size: 0.74rem;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.1);
+  color: #94a3b8;
+  flex-shrink: 0;
+}
+
+.iptv-cat-item.active .iptv-cat-count {
+  background: #00d2ff;
+  color: #090d16;
+}
+
+.iptv-catalog-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  min-width: 0;
+}
+
+.net-catalog-title-wrap {
+  display: flex;
+  align-items: baseline;
+  gap: 14px;
+}
+
+.net-catalog-count-badge {
+  font-size: 0.92rem;
+  color: #94a3b8;
+  font-weight: 600;
+}
