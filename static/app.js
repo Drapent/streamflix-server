@@ -4691,9 +4691,9 @@ document.addEventListener("DOMContentLoaded", () => {
       });
 
       card.addEventListener("keydown", (e) => {
-        if (e.keyCode === 13) {
+        if (e.keyCode === 13 || e.keyCode === 29443) {
           e.preventDefault();
-          card.click();
+          selectProfile(prof);
         }
       });
 
@@ -5649,8 +5649,13 @@ document.addEventListener("DOMContentLoaded", () => {
   const btnManageToggleEl = document.getElementById("btnManageProfilesToggle") || btnManageProfilesBtn;
   if (btnManageToggleEl) {
     btnManageToggleEl.addEventListener("click", () => {
-      isManageProfiles = !isManageProfiles;
-      renderProfilesScreen();
+      openManageProfilesModal();
+    });
+    btnManageToggleEl.addEventListener("keydown", (e) => {
+      if (e.keyCode === 13 || e.keyCode === 29443) {
+        e.preventDefault();
+        openManageProfilesModal();
+      }
     });
   }
   const btnChangePlaylistProf = document.getElementById("btnChangePlaylistFromProfiles");
@@ -10105,7 +10110,16 @@ document.addEventListener("DOMContentLoaded", () => {
   function openNetflixCatalogCategory(categoryType) {
     if (netHomeContainer) netHomeContainer.style.display = "none";
     if (netDownloadsContainer) netDownloadsContainer.style.display = "none";
-    if (netCatalogContainer) netCatalogContainer.style.display = "block";
+    const netSearchContainer = document.getElementById("netSearchContainer");
+    if (netSearchContainer) netSearchContainer.style.display = "none";
+    const netEpgContainer = document.getElementById("netEpgContainer");
+    if (netEpgContainer) netEpgContainer.style.display = "none";
+    const netSettingsContainer = document.getElementById("netSettingsContainer");
+    if (netSettingsContainer) netSettingsContainer.style.display = "none";
+    if (netCatalogContainer) {
+      netCatalogContainer.style.display = "flex";
+      netCatalogContainer.classList.add("iptv-catalog-split");
+    }
 
     currentCatalogCategory = categoryType;
     currentCatalogSubgroup = "Todos";
@@ -10326,13 +10340,14 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   async function loadNetflixCatalogGrid(type, append) {
-    const isStandalone = (typeof window !== "undefined" && (!!window.tizen || !!window.webapis || (window.location && (window.location.protocol === "file:" || window.location.protocol === "app:" || window.location.protocol === "widget:"))));
     const apiType = type === "series" ? "series" : (type === "movies" ? "movie" : (type === "live" ? "live" : type));
-
-    if (isStandalone || isLocalServerOffline) {
-      await loadServerlessCatalogGrid(type, apiType, append);
-      return;
+    if (netCatalogContainer) {
+      netCatalogContainer.style.display = "flex";
+      netCatalogContainer.classList.add("iptv-catalog-split");
     }
+    // Sempre usa o motor IPTV de alta velocidade com barra lateral de categorias
+    await loadServerlessCatalogGrid(type, apiType, append);
+    return;
 
     const grid = document.getElementById("netCatalogGrid");
     const emptyState = document.getElementById("netCatalogEmpty");
@@ -11801,3 +11816,135 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 // OTA Trigger Test: 1792874373
+
+
+  // ==========================================================================
+  // DEDICATED IPTV PROFILE MANAGEMENT & INSTANT SELECTION ENGINE
+  // ==========================================================================
+  function openManageProfilesModal() {
+    const modal = document.getElementById("manageProfilesModal");
+    const list = document.getElementById("manageProfilesModalList");
+    if (!modal || !list) return;
+
+    list.innerHTML = "";
+    syncProfilesList.forEach((prof, idx) => {
+      const av = getAvatarConfig(prof.avatar);
+      const row = document.createElement("div");
+      row.className = "manage-profile-item";
+      row.innerHTML = `
+        <div class="manage-profile-avatar" style="background:${av.color};">
+          ${av.svg || `<span style="font-size:1.4rem;">${av.icon || '👤'}</span>`}
+        </div>
+        <input type="text" class="manage-profile-input" value="${escapeHtml(prof.name)}" data-id="${prof.id}" maxlength="20" placeholder="Nome do perfil" tabindex="0" />
+        <div class="manage-profile-actions">
+          <button class="btn-manage-act save" data-id="${prof.id}" tabindex="0">Salvar</button>
+          ${syncProfilesList.length > 1 ? `<button class="btn-manage-act danger delete" data-id="${prof.id}" tabindex="0">Excluir</button>` : ''}
+        </div>
+      `;
+
+      const inputEl = row.querySelector(".manage-profile-input");
+      const btnSave = row.querySelector(".btn-manage-act.save");
+      const btnDel = row.querySelector(".btn-manage-act.delete");
+
+      btnSave.onclick = () => {
+        const newName = inputEl.value.trim();
+        if (!newName) {
+          showToastNotification("Digite um nome válido para o perfil");
+          return;
+        }
+        prof.name = newName;
+        saveSyncProfilesToStorage();
+        renderProfilesScreen();
+        showToastNotification("Perfil atualizado: " + newName);
+      };
+
+      if (btnDel) {
+        btnDel.onclick = () => {
+          if (confirm("Deseja realmente excluir o perfil '" + prof.name + "'?")) {
+            syncProfilesList = syncProfilesList.filter(p => p.id !== prof.id);
+            if (currentProfile && currentProfile.id === prof.id) {
+              currentProfile = syncProfilesList[0];
+              localStorage.setItem("iptv_active_profile", JSON.stringify(currentProfile));
+            }
+            saveSyncProfilesToStorage();
+            renderProfilesScreen();
+            openManageProfilesModal();
+            showToastNotification("Perfil excluído com sucesso");
+          }
+        };
+      }
+
+      list.appendChild(row);
+    });
+
+    modal.style.display = "flex";
+    setTimeout(() => {
+      const firstInput = modal.querySelector("input");
+      if (firstInput) firstInput.focus();
+    }, 100);
+  }
+
+  function closeManageProfilesModal() {
+    const modal = document.getElementById("manageProfilesModal");
+    if (modal) modal.style.display = "none";
+    renderProfilesScreen();
+  }
+
+  // Setup manage profiles modal listeners
+  const btnCloseManageModal = document.getElementById("btnCloseManageProfilesModal");
+  if (btnCloseManageModal) btnCloseManageModal.onclick = closeManageProfilesModal;
+  const btnManageDone = document.getElementById("btnManageDone");
+  if (btnManageDone) btnManageDone.onclick = closeManageProfilesModal;
+  const btnManageAddNew = document.getElementById("btnManageAddNewProfile");
+  if (btnManageAddNew) {
+    btnManageAddNew.onclick = () => {
+      closeManageProfilesModal();
+      openAddProfileModal();
+    };
+  }
+
+
+  // ==========================================================================
+  // ON-SCREEN VIRTUAL KEYBOARD ENGINE FOR SMART TV REMOTE CONTROL
+  // ==========================================================================
+  function setupIptvSearchVirtualKeyboard() {
+    const inputMain = document.getElementById("netSearchInputMain");
+    if (!inputMain) return;
+
+    document.querySelectorAll(".iptv-kb-key").forEach(keyBtn => {
+      keyBtn.onclick = () => {
+        const key = keyBtn.dataset.key;
+        if (!key) return;
+
+        let cur = inputMain.value;
+        if (key === "SPACE") {
+          inputMain.value = cur + " ";
+        } else if (key === "BACK") {
+          inputMain.value = cur.slice(0, -1);
+        } else if (key === "CLEAR") {
+          inputMain.value = "";
+        } else {
+          inputMain.value = cur + key;
+        }
+
+        const q = inputMain.value.trim().toLowerCase();
+        const clearBtn = document.getElementById("netSearchClearBtn");
+        if (clearBtn) clearBtn.style.display = q ? "block" : "none";
+        executeSearchFilter(q);
+      };
+
+      keyBtn.onkeydown = (e) => {
+        if (e.keyCode === 13 || e.keyCode === 29443) {
+          e.preventDefault();
+          keyBtn.click();
+        }
+      };
+    });
+  }
+
+  // Auto-init search keyboard
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", setupIptvSearchVirtualKeyboard);
+  } else {
+    setupIptvSearchVirtualKeyboard();
+  }
